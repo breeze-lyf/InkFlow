@@ -49,6 +49,7 @@ const Editor = {
     inst.host.classList.remove('hidden');
     const sc = this._scroller(inst.host);
     if (sc) sc.scrollTop = tab.scrollTop || 0;
+    this._rescanImages(inst); // 切回时复扫图片：加载失败的自愈
     requestAnimationFrame(() => {
       try { inst.vditor.focus(); } catch (e) { /* 忽略 */ }
     });
@@ -191,15 +192,27 @@ const Editor = {
       if (img.dataset.inkFixed === src) return;
       const tab = inst.tab;
       if (!tab || !tab.path) return;
-      const abs = P.resolve(P.dirname(tab.path), decodeURIComponent(src));
+      let rel;
+      try { rel = decodeURIComponent(src); } catch { rel = src; } // 文件名含 % 容错
+      const abs = P.resolve(P.dirname(tab.path), rel);
       img.dataset.inkFixed = src;
+      img.style.opacity = '';
       img.src = `${App.assetUrl}/img?path=${encodeURIComponent(abs)}`;
-      img.onerror = () => { img.style.opacity = '0.35'; };
+      img.onerror = () => {
+        // 加载失败（服务未就绪/文件后到/云端驱逐）：1.2s 后带时间戳重试一次
+        img.onerror = null;
+        setTimeout(() => {
+          if (!img.isConnected) return;
+          img.src = `${App.assetUrl}/img?path=${encodeURIComponent(abs)}&t=${Date.now()}`;
+          img.onerror = () => { img.style.opacity = '0.35'; };
+        }, 1200);
+      };
     };
     const scan = (scope) => {
       if (scope.tagName === 'IMG') fix(scope);
       $$('img', scope).forEach(fix);
     };
+    inst._imgFix = fix;
     new MutationObserver((mutations) => {
       for (const m of mutations) {
         m.addedNodes && m.addedNodes.forEach((n) => {
@@ -208,6 +221,20 @@ const Editor = {
         if (m.type === 'attributes' && m.target.tagName === 'IMG') fix(m.target);
       }
     }).observe(inst.host, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+  },
+
+  // 激活时复扫图片：曾加载失败的重新修正（自愈）
+  _rescanImages(inst) {
+    $$('img', inst.host).forEach((img) => {
+      const orig = img.dataset.inkFixed;
+      if (!orig) {
+        if (inst._imgFix) inst._imgFix(img);
+        return;
+      }
+      if (img.complete && img.naturalWidth > 0) { img.style.opacity = ''; return; }
+      delete img.dataset.inkFixed;
+      img.setAttribute('src', orig); // 还原相对路径，交给观察器重新修正
+    });
   },
 
   // 链接 / TOC 点击拦截（每个实例宿主各自绑定）

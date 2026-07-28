@@ -905,6 +905,19 @@ async function runFuncSmoke() {
   results.push(['img-insert-once', imgInsert.afterOne === 1 && imgInsert.afterTwo === 2]);
   if (imgInsert.afterOne !== 1 || imgInsert.afterTwo !== 2) console.log('[debug] img-insert:', JSON.stringify(imgInsert));
 
+  // 6.978 相对路径图片：应全部被改写为资源服务地址并成功加载
+  const imgOk = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    await App.openFile(${JSON.stringify(path.join(samplesDir, '功能演示.md'))});
+    await sleep(1800);
+    const imgs = Array.from(document.querySelectorAll('.editor-host:not(.hidden) img'));
+    const fixed = imgs.filter(i => i.dataset.inkFixed).length;
+    const loaded = imgs.filter(i => i.complete && i.naturalWidth > 0).length;
+    return { total: imgs.length, fixed, loaded };
+  })()`);
+  results.push(['img-render', imgOk.total > 0 && imgOk.fixed === imgOk.total && imgOk.loaded === imgOk.total]);
+  if (!(imgOk.total > 0 && imgOk.loaded === imgOk.total)) console.log('[debug] img-render:', JSON.stringify(imgOk));
+
   // 6.98 Word 生成管线（主进程直接验证转换器，不弹对话框）
   try {
     const HTMLtoDOCX = require('html-to-docx');
