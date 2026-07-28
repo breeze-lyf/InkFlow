@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="assets/brand-lockup.png" width="340" alt="墨流 InkFlow">
-
-**纸上得来终觉浅，落笔此处墨自流。**
+<img src="assets/brand-banner.jpg" width="760" alt="墨流 InkFlow">
 
 为 Mac 写作而生的 Markdown 编辑器 —— Typora 式即时渲染 × 现代工作流
 
