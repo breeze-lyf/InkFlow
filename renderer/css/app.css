@@ -73,6 +73,74 @@ body[data-sidebar="hidden"] #sidebar-resizer { display: none; }
 .side-panel { flex: 1; display: none; flex-direction: column; min-height: 0; }
 .side-panel.active { display: flex; }
 
+/* ---- 侧栏环境控制条 ---- */
+#sidebar-footer {
+  height: 44px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 8px;
+}
+#theme-seg {
+  display: flex;
+  background: var(--bg-sidebar-active);
+  border-radius: var(--radius-s);
+  padding: 2px;
+  gap: 2px;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.theme-seg-btn {
+  width: 30px; height: 24px;
+  border: none; background: transparent;
+  color: var(--text-2);
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .13s var(--ease);
+}
+.theme-seg-btn svg { width: 15px; height: 15px; }
+.theme-seg-btn:hover { color: var(--text-1); background: var(--bg-sidebar-hover); }
+.theme-seg-btn.active {
+  background: var(--bg-editor);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(60, 50, 30, .14);
+}
+
+/* ---- 设置弹窗 ---- */
+.settings-box { width: 400px; }
+.set-group { padding: 12px 20px 2px; }
+.set-label { font-size: 12px; color: var(--text-2); margin-bottom: 8px; }
+.set-label b { color: var(--text-1); }
+.set-seg { display: flex; background: var(--bg-sidebar-active); border-radius: var(--radius-s); padding: 3px; gap: 3px; }
+.set-seg button {
+  flex: 1; height: 28px;
+  border: none; background: transparent;
+  color: var(--text-2); font-size: 12.5px;
+  border-radius: 6px; cursor: pointer;
+  transition: all .13s var(--ease);
+}
+.set-seg button:hover { color: var(--text-1); }
+.set-seg button.active { background: var(--bg-editor); color: var(--accent); font-weight: 550; box-shadow: 0 1px 3px rgba(60,50,30,.1); }
+.set-fs { display: flex; align-items: center; gap: 10px; }
+.set-fs .icon-btn { width: 26px; height: 26px; font-size: 14px; }
+.fs-bar { flex: 1; height: 4px; border-radius: 2px; background: var(--bg-sidebar-active); overflow: hidden; }
+#fs-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .15s var(--ease); }
+.set-toggle {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-1);
+  padding: 6px 0; cursor: pointer;
+}
+.set-toggle input { accent-color: var(--accent); width: 15px; height: 15px; }
+.set-dim { color: var(--text-3); font-size: 12px; margin-left: 2px; }
+.set-foot {
+  padding: 14px 20px 16px;
+  font-size: 12px; color: var(--text-3);
+}
+.set-foot a { color: var(--accent); cursor: pointer; text-decoration: none; }
+.set-foot a:hover { text-decoration: underline; }
+
 #lib-bar {
   display: flex;
   align-items: center;

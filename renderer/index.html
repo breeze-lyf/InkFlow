@@ -48,6 +48,25 @@
         <div id="outline-list"></div>
         <div id="outline-empty">当前文档没有标题</div>
       </div>
+
+      <!-- 环境控制条：主题切换 + 设置入口 -->
+      <div id="sidebar-footer">
+        <div id="theme-seg" role="group" aria-label="主题">
+          <button class="theme-seg-btn" data-theme-opt="light" title="纸 · 浅色">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3.2" stroke="currentColor" stroke-width="1.2"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M12.4 3.6l-1.1 1.1M4.7 11.3l-1.1 1.1" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+          </button>
+          <button class="theme-seg-btn" data-theme-opt="dark" title="墨 · 深色">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="theme-seg-btn" data-theme-opt="system" title="跟随系统">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 2a6 6 0 0 1 0 12V2z" fill="currentColor" opacity=".85"/></svg>
+          </button>
+        </div>
+        <div style="flex:1"></div>
+        <button id="btn-open-settings" class="icon-btn" title="设置 (⌘,)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><g transform="scale(0.667)"><circle cx="12" cy="12" r="3" stroke-width="1.8"/><path stroke-width="1.8" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></g></svg>
+        </button>
+      </div>
     </aside>
 
     <div id="sidebar-resizer"></div>
@@ -148,6 +167,40 @@
         <p class="about-dim">即时渲染 · 文档库 · 命令面板 · 专注写作</p>
         <p class="about-dim">基于开源项目 <b>Vditor</b>（MIT License）构建</p>
       </div>
+    </div>
+  </div>
+
+  <!-- 设置 -->
+  <div id="modal-settings" class="modal hidden">
+    <div class="modal-mask"></div>
+    <div class="modal-box settings-box">
+      <div class="modal-title">设置 <span class="modal-close" data-close>×</span></div>
+      <div class="set-group">
+        <div class="set-label">外观主题</div>
+        <div class="set-seg" id="set-theme">
+          <button data-v="light">纸 · 浅色</button><button data-v="dark">墨 · 深色</button><button data-v="system">跟随系统</button>
+        </div>
+      </div>
+      <div class="set-group">
+        <div class="set-label">页面宽度</div>
+        <div class="set-seg" id="set-pagewidth">
+          <button data-v="normal">正常</button><button data-v="wide">超宽</button>
+        </div>
+      </div>
+      <div class="set-group">
+        <div class="set-label">编辑字号 <b id="set-fontsize-val">16</b></div>
+        <div class="set-fs">
+          <button id="fs-minus" class="icon-btn">−</button>
+          <div class="fs-bar"><div id="fs-fill"></div></div>
+          <button id="fs-plus" class="icon-btn">＋</button>
+        </div>
+      </div>
+      <div class="set-group">
+        <label class="set-toggle"><input type="checkbox" id="set-focus"> 专注模式<span class="set-dim">淡化非当前段落</span></label>
+        <label class="set-toggle"><input type="checkbox" id="set-typewriter"> 打字机模式<span class="set-dim">光标行始终居中</span></label>
+        <label class="set-toggle"><input type="checkbox" id="set-toolbar"> 显示编辑工具栏</label>
+      </div>
+      <div class="set-foot"><span id="set-ver"></span> · <a id="set-shortcuts-link">键盘快捷键</a> · <a id="set-about-link">关于墨流</a></div>
     </div>
   </div>
 

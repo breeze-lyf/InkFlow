@@ -18,6 +18,7 @@ const App = {
     this.samplesDir = info.samplesDir;
     this.settings = await ink.getSettings();
     $('#about-ver').textContent = 'v' + info.version;
+    $('#set-ver').textContent = '墨流 v' + info.version;
 
     CtxMenu.init();
     Overlay.init();
@@ -320,6 +321,7 @@ const App = {
     $('#btn-collapse').onclick = () => FileTree.collapseAll();
     $('#btn-open-folder-empty').onclick = () => this.openFolderDialog();
     $('#btn-sidebar-toggle').onclick = () => this.toggleSidebar();
+    this._bindSettings();
 
     // 欢迎页
     $('#wa-new').onclick = () => this.newUntitled();
@@ -483,12 +485,58 @@ const App = {
     else dark = mode === 'dark';
     document.body.dataset.theme = dark ? 'dark' : 'light';
     if (Editor.ready) Editor.applyTheme(dark);
+    this._syncThemeSeg(mode);
+  },
+
+  _syncThemeSeg(mode) {
+    mode = mode || this.settings.theme || 'system';
+    $$('#theme-seg .theme-seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.themeOpt === mode));
+    $$('#set-theme button').forEach((b) => b.classList.toggle('active', b.dataset.v === mode));
   },
 
   setTheme(mode) {
     this.settings.theme = mode;
     this.setSetting({ theme: mode });
     this._applyThemeSetting(mode);
+  },
+
+  /* ================= 设置面板 ================= */
+  openSettings() {
+    const s = this.settings;
+    this._syncThemeSeg();
+    $$('#set-pagewidth button').forEach((b) => b.classList.toggle('active', b.dataset.v === (s.pageWidth || 'normal')));
+    $('#set-fontsize-val').textContent = s.fontSize || 16;
+    $('#fs-fill').style.width = (((s.fontSize || 16) - 13) / (24 - 13) * 100) + '%';
+    $('#set-focus').checked = !!s.focusMode;
+    $('#set-typewriter').checked = s.typewriter !== false;
+    $('#set-toolbar').checked = !!s.showToolbar;
+    $('#modal-settings').classList.remove('hidden');
+  },
+
+  _bindSettings() {
+    $('#btn-open-settings').onclick = () => this.openSettings();
+    $$('#theme-seg .theme-seg-btn').forEach((b) => {
+      b.onclick = () => this.setTheme(b.dataset.themeOpt);
+    });
+    $$('#set-theme button').forEach((b) => {
+      b.onclick = () => this.setTheme(b.dataset.v);
+    });
+    $$('#set-pagewidth button').forEach((b) => {
+      b.onclick = () => { this.setPageWidth(b.dataset.v); this.openSettings(); };
+    });
+    $('#fs-minus').onclick = () => { this.zoom(-1); this.openSettings(); };
+    $('#fs-plus').onclick = () => { this.zoom(1); this.openSettings(); };
+    $('#set-focus').onchange = (e) => this.toggleFocus(e.target.checked);
+    $('#set-typewriter').onchange = (e) => this.toggleTypewriter(e.target.checked);
+    $('#set-toolbar').onchange = (e) => this.toggleToolbar(e.target.checked);
+    $('#set-shortcuts-link').onclick = () => {
+      $('#modal-settings').classList.add('hidden');
+      $('#modal-shortcuts').classList.remove('hidden');
+    };
+    $('#set-about-link').onclick = () => {
+      $('#modal-settings').classList.add('hidden');
+      $('#modal-about').classList.remove('hidden');
+    };
   },
 
   systemThemeChanged() {
@@ -657,6 +705,7 @@ const App = {
       { icon: 'cmd', title: '行内代码', kbd: '⌘E', run: () => Editor.command('inline-code') },
       { icon: 'file', title: '打开功能演示文档', run: () => this.openDemo() },
       { icon: 'cmd', title: '键盘快捷键', kbd: '⌘/', run: () => $('#modal-shortcuts').classList.remove('hidden') },
+      { icon: 'cmd', title: '打开设置', kbd: '⌘,', run: () => this.openSettings() },
       { icon: 'cmd', title: '关于墨流', run: () => $('#modal-about').classList.remove('hidden') },
     ];
   },
@@ -715,7 +764,7 @@ const App = {
         case 'zoom': this.zoom(payload); break;
         case 'show-shortcuts': $('#modal-shortcuts').classList.remove('hidden'); break;
         case 'open-demo': this.openDemo(); break;
-        case 'open-settings': Overlay.open('palette'); break;
+        case 'open-settings': this.openSettings(); break;
         case 'about': $('#modal-about').classList.remove('hidden'); break;
         case 'recent-changed': this._renderWelcome(); break;
         case 'tree-fs-changed': FileTree.softRefresh(); break;

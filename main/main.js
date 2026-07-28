@@ -962,6 +962,35 @@ async function runFuncSmoke() {
   results.push(['export-image-gen', pngR.ok === true && pngOk]);
   delete process.env.INKFLOW_TEST_SAVEPATH;
 
+  // 6.997 环境控制条与设置面板
+  const seg = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    document.querySelector('#theme-seg [data-theme-opt="dark"]').click();
+    await sleep(400);
+    const darkOk = document.body.dataset.theme === 'dark'
+      && document.querySelector('#theme-seg [data-theme-opt="dark"]').classList.contains('active');
+    document.querySelector('#theme-seg [data-theme-opt="light"]').click();
+    await sleep(400);
+    const backOk = document.body.dataset.theme === 'light'
+      && document.querySelector('#theme-seg [data-theme-opt="light"]').classList.contains('active');
+    return { darkOk, backOk };
+  })()`);
+  results.push(['theme-seg', seg.darkOk && seg.backOk]);
+
+  const setPanel = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    App.openSettings();
+    await sleep(200);
+    const visible = !document.querySelector('#modal-settings').classList.contains('hidden');
+    const before = parseInt(document.querySelector('#set-fontsize-val').textContent, 10);
+    document.querySelector('#fs-plus').click();
+    await sleep(200);
+    const after = parseInt(document.querySelector('#set-fontsize-val').textContent, 10);
+    document.querySelector('#modal-settings [data-close]').click();
+    return { visible, before, after, zoomOk: after === before + 1 };
+  })()`);
+  results.push(['settings-panel', setPanel.visible && setPanel.zoomOk]);
+
   // 6.996 块级格式快捷键：⌘2 应用二级标题、⌘0 恢复正文（先在测试文档标签上进行）
   await js(`App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}))`);
   await wait(600);
