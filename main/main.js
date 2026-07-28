@@ -864,6 +864,30 @@ async function runFuncSmoke() {
   try { fs.unlinkSync(extFile); } catch {}
   await wait(1200);
 
+  // 6.977 图片行点击：单击插入一份，双击也只多一份（防双发）
+  const imgInsert = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    await App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}));
+    await sleep(400);
+    Editor.setValue('');
+    await sleep(300);
+    const dirRow = document.querySelector('.tree-row[data-is-dir="1"]');
+    if (dirRow && !dirRow.parentElement.classList.contains('open')) { dirRow.click(); await sleep(400); }
+    const imgRow = document.querySelector('.tree-row[data-path$=".png"], .tree-row[data-path$=".jpg"]');
+    if (!imgRow) return { fail: 'no img row' };
+    imgRow.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    await sleep(500);
+    const afterOne = (Editor.getValue().match(/!\\[/g) || []).length;
+    imgRow.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    imgRow.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 }));
+    imgRow.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    await sleep(500);
+    const afterTwo = (Editor.getValue().match(/!\\[/g) || []).length;
+    return { afterOne, afterTwo };
+  })()`);
+  results.push(['img-insert-once', imgInsert.afterOne === 1 && imgInsert.afterTwo === 2]);
+  if (imgInsert.afterOne !== 1 || imgInsert.afterTwo !== 2) console.log('[debug] img-insert:', JSON.stringify(imgInsert));
+
   // 6.98 Word 生成管线（主进程直接验证转换器，不弹对话框）
   try {
     const HTMLtoDOCX = require('html-to-docx');

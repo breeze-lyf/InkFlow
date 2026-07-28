@@ -107,12 +107,13 @@ const FileTree = {
       row.onclick = (e) => {
         e.stopPropagation();
         this.select(entry.path);
-        // 双击文件夹时浏览器会派发两次 click：第二次起忽略，避免"展开又收起=没反应"
+        // 双击会派发两次 click：第二次起忽略。
+        // 文件夹防"展开又收起"；图片防"插入两份"；文件打开本身幂等
         if (entry.isDir) {
           if (e.detail > 1) return;
           this.toggleDir(node, entry, depth);
         } else if (entry.isImage) {
-          App.insertImagePath(entry.path);
+          if (e.detail === 1) App.insertImagePath(entry.path);
         } else {
           App.openFile(entry.path);
         }
@@ -125,7 +126,8 @@ const FileTree = {
       row.ondblclick = (e) => {
         e.stopPropagation();
         e.preventDefault();
-        if (!entry.isDir) this._inlineRename(row, entry);
+        // 图片双击容易误触，不进入重命名（重命名走右键菜单）
+        if (!entry.isDir && !entry.isImage) this._inlineRename(row, entry);
       };
 
       if (entry.isDir && this.expanded.has(entry.path)) {
