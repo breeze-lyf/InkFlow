@@ -828,7 +828,19 @@ async function runFuncSmoke() {
   results.push(['instance-reuse', !!(reuse.same && reuse.visible && reuse.intact)]);
 
   // 6.97 文件树折叠：行点击展开/收起 + 全部折叠按钮
-  const samplesDir = path.join(__dirname, '..', 'samples');
+  // 树测试在 samples 的临时副本上进行（避免污染仓库 / asar 只读包内无法写入）
+  // 注：fs.cpSync 未被 Electron 的 asar 补丁覆盖，需手工递归复制
+  const copyDirSync = (src, dst) => {
+    fs.mkdirSync(dst, { recursive: true });
+    for (const e of fs.readdirSync(src, { withFileTypes: true })) {
+      const s = path.join(src, e.name);
+      const d = path.join(dst, e.name);
+      if (e.isDirectory()) copyDirSync(s, d);
+      else fs.copyFileSync(s, d);
+    }
+  };
+  const samplesDir = path.join(tmpDir, 'samples');
+  copyDirSync(path.join(__dirname, '..', 'samples'), samplesDir);
   mainWin.webContents.send('menu:action', { action: 'open-path', payload: samplesDir });
   await wait(1300);
   const tree = await js(`(async () => {
