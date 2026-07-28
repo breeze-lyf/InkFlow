@@ -94,7 +94,7 @@ function createWindow() {
     minHeight: 560,
     title: '墨流 InkFlow',
     titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 16, y: 18 },
+    trafficLightPosition: { x: 16, y: 14 }, // 40px 页栏内垂直居中（按钮高 12px → (40-12)/2）
     backgroundColor: dark ? '#14161a' : '#f7f5f0',
     show: false,
     webPreferences: {
@@ -787,6 +787,23 @@ async function runFuncSmoke() {
     return { before, hidden, back };
   })()`);
   results.push(['sidebar-toggle', sb.hidden === 'hidden' && sb.back === sb.before]);
+
+  // 6.955 页签双击关闭
+  const dbl = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    App.newUntitled();
+    await sleep(800);
+    const before = App.tabs.length;
+    const probe = { val: Editor.getValue(), saved: App.activeTab().savedValue, dirty: App.activeTab().dirty };
+    const tabEl = document.querySelectorAll('#tabs .tab')[App.active];
+    tabEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+    await sleep(500);
+    const modal = !document.querySelector('#modal-quit').classList.contains('hidden');
+    const lastTab = App.tabs[App.tabs.length - 1];
+    return { before, after: App.tabs.length, modal, probe, name: lastTab && lastTab.name };
+  })()`);
+  results.push(['tab-dblclick-close', dbl.after === dbl.before - 1]);
+  if (dbl.after !== dbl.before - 1) console.log('[debug] dblclick:', JSON.stringify(dbl));
 
   // 6.96 编辑器实例池：切走再切回，宿主元素应保持同一个（零重渲染）
   const reuse = await js(`(async () => {

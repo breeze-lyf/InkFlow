@@ -118,7 +118,7 @@ const App = {
     // 实例池：切换只显隐，不重渲染；首次激活懒创建
     await Editor.activate(tab.key, tab);
     const cur = Editor.getValue(tab.key);
-    tab.dirty = (cur === null ? tab.cachedValue : cur) !== tab.savedValue;
+    tab.dirty = this._contentDirty(cur === null ? tab.cachedValue : cur, tab.savedValue);
 
     this._renderTabs();
     this._syncWelcome();
@@ -196,13 +196,20 @@ const App = {
   },
 
   /* ================= 输入 & 保存 ================= */
+  // vditor 空文档 getValue() 返回 "\n"：全空白与空串视为等价，避免"新建未动过的标签也提示保存"
+  _contentDirty(val, saved) {
+    if (val === saved) return false;
+    return val.trim() !== '' || (saved || '').trim() !== '';
+  },
+
+
   onEditorInput(key) {
     const tab = this.tabs.find((t) => t.key === key) || this.activeTab();
     if (!tab) return;
     const val = Editor.getValue(tab.key);
     if (val === null) return;
     tab.cachedValue = val;
-    tab.dirty = val !== tab.savedValue;
+    tab.dirty = this._contentDirty(val, tab.savedValue);
     this._renderTabs();
     this.updateStatus();
     ink.setWindowFile(tab.path || '', tab.dirty);
@@ -526,7 +533,8 @@ const App = {
       close.onclick = (e) => { e.stopPropagation(); this.closeTab(i); };
       t.appendChild(close);
       t.onclick = () => this.activate(i);
-      t.onauxclick = (e) => { if (e.button === 1) this.closeTab(i); };
+      t.ondblclick = (e) => { e.preventDefault(); this.closeTab(i); }; // 双击关闭
+      t.onauxclick = (e) => { if (e.button === 1) this.closeTab(i); }; // 中键关闭
       t.oncontextmenu = (e) => {
         e.preventDefault();
         CtxMenu.show(e.clientX, e.clientY, [
