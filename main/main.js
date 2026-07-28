@@ -930,6 +930,17 @@ async function runFuncSmoke() {
   results.push(['img-render', imgOk.total > 0 && imgOk.fixed === imgOk.total && imgOk.loaded === imgOk.total]);
   if (!(imgOk.total > 0 && imgOk.loaded === imgOk.total)) console.log('[debug] img-render:', JSON.stringify(imgOk));
 
+  // 6.979 markmap 离线渲染（懒加载本地引擎，应出现 svg 导图）
+  await js(`App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}))`);
+  await wait(500);
+  const mm = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    Editor.setValue('\`\`\`markmap\\n# 测试导图\\n## 分支A\\n## 分支B\\n\`\`\`\\n');
+    await sleep(3000);
+    return { svg: !!document.querySelector('.editor-host:not(.hidden) .vditor-ir svg') };
+  })()`);
+  results.push(['markmap-render', mm.svg === true]);
+
   // 6.98 Word 生成管线（主进程直接验证转换器，不弹对话框）
   try {
     const HTMLtoDOCX = require('html-to-docx');

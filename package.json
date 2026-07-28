@@ -131,9 +131,6 @@
       "!node_modules/vditor/dist/js/mathjax/**",
       "!node_modules/vditor/dist/js/graphviz/**",
       "!node_modules/vditor/dist/js/abcjs/**",
-      "!node_modules/vditor/dist/js/markmap/**",
-      "!node_modules/vditor/dist/js/plantuml/**",
-      "!node_modules/vditor/dist/js/smiles-drawer/**",
       "!node_modules/vditor/dist/js/flowchart.js/**"
     ],
     "mac": {
