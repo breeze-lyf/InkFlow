@@ -392,8 +392,15 @@ function registerIPC() {
   });
 
   // ---- 导出 ----
+  // showSaveDialog 返回 {canceled, filePath}；测试钩子允许跳过对话框
+  async function pickSavePath(opts) {
+    if (process.env.INKFLOW_TEST_SAVEPATH) return process.env.INKFLOW_TEST_SAVEPATH;
+    const r = await dialog.showSaveDialog(mainWin, opts);
+    return r.canceled ? null : r.filePath;
+  }
+
   ipcMain.handle('export:pdf', async (e, { html, cssLinks, suggestedName }) => {
-    const savePath = await dialog.showSaveDialog(mainWin, {
+    const savePath = await pickSavePath({
       defaultPath: suggestedName,
       filters: [{ name: 'PDF', extensions: ['pdf'] }],
     });
@@ -428,7 +435,7 @@ ${cssLinks.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
         margins: { marginType: 'custom', top: 0.55, bottom: 0.55, left: 0.5, right: 0.5 },
       });
       fs.writeFileSync(savePath, pdf);
-      shell.showItemInFolder(savePath);
+      if (!process.env.INKFLOW_TEST_SAVEPATH) shell.showItemInFolder(savePath);
       return { ok: true, path: savePath };
     } catch (err) {
       return { ok: false, error: err.message };
@@ -441,7 +448,7 @@ ${cssLinks.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
   });
 
   ipcMain.handle('export:html', async (e, { html, cssTexts, suggestedName }) => {
-    const savePath = await dialog.showSaveDialog(mainWin, {
+    const savePath = await pickSavePath({
       defaultPath: suggestedName,
       filters: [{ name: 'HTML', extensions: ['html'] }],
     });
@@ -455,7 +462,7 @@ ${cssLinks.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
 </head><body class="vditor-reset">${html}</body></html>`;
     try {
       fs.writeFileSync(savePath, doc, 'utf-8');
-      shell.showItemInFolder(savePath);
+      if (!process.env.INKFLOW_TEST_SAVEPATH) shell.showItemInFolder(savePath);
       return { ok: true, path: savePath };
     } catch (err) {
       return { ok: false, error: err.message };
@@ -463,7 +470,7 @@ ${cssLinks.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
   });
 
   ipcMain.handle('export:word', async (e, { html, cssTexts, suggestedName }) => {
-    const savePath = await dialog.showSaveDialog(mainWin, {
+    const savePath = await pickSavePath({
       defaultPath: suggestedName,
       filters: [{ name: 'Word 文档', extensions: ['docx'] }],
     });
@@ -488,7 +495,7 @@ ${cssLinks.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
         pageNumber: false,
       });
       fs.writeFileSync(savePath, buf);
-      shell.showItemInFolder(savePath);
+      if (!process.env.INKFLOW_TEST_SAVEPATH) shell.showItemInFolder(savePath);
       return { ok: true, path: savePath };
     } catch (err) {
       return { ok: false, error: err.message };
@@ -496,7 +503,7 @@ ${cssLinks.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
   });
 
   ipcMain.handle('export:image', async (e, { html, cssLinks, suggestedName }) => {
-    const savePath = await dialog.showSaveDialog(mainWin, {
+    const savePath = await pickSavePath({
       defaultPath: suggestedName,
       filters: [{ name: 'PNG 图片', extensions: ['png'] }],
     });
@@ -530,7 +537,7 @@ ${(cssLinks || []).map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
       await new Promise((r) => setTimeout(r, 500));
       const img = await shotWin.webContents.capturePage();
       fs.writeFileSync(savePath, img.toPNG());
-      shell.showItemInFolder(savePath);
+      if (!process.env.INKFLOW_TEST_SAVEPATH) shell.showItemInFolder(savePath);
       return { ok: true, path: savePath };
     } catch (err) {
       return { ok: false, error: err.message };
@@ -815,6 +822,34 @@ async function runFuncSmoke() {
 
   // 6.99 拖拽路径桥接存在
   results.push(['webutils-bridge', await js(`typeof ink.getFilePath === 'function'`)]);
+
+  // 6.995 导出管线端到端（测试钩子跳过保存对话框，校验文件魔数）
+  const pdfPath = path.join(tmpDir, '导出测试.pdf');
+  process.env.INKFLOW_TEST_SAVEPATH = pdfPath;
+  const pdfR = await js(`ink.exportPdf({ html: '<h1>墨流</h1><p>导出管线</p>', cssLinks: [], suggestedName: 'x.pdf' })`);
+  let pdfOk = false;
+  try {
+    const head = Buffer.alloc(5);
+    const fd = fs.openSync(pdfPath, 'r');
+    fs.readSync(fd, head, 0, 5, 0);
+    fs.closeSync(fd);
+    pdfOk = head.toString('latin1') === '%PDF-';
+  } catch {}
+  results.push(['export-pdf-gen', pdfR.ok === true && pdfOk]);
+
+  const pngPath = path.join(tmpDir, '导出测试.png');
+  process.env.INKFLOW_TEST_SAVEPATH = pngPath;
+  const pngR = await js(`ink.exportImage({ html: '<h1>墨流</h1><p>导出管线</p>', cssLinks: [], suggestedName: 'x.png' })`);
+  let pngOk = false;
+  try {
+    const head = Buffer.alloc(8);
+    const fd = fs.openSync(pngPath, 'r');
+    fs.readSync(fd, head, 0, 8, 0);
+    fs.closeSync(fd);
+    pngOk = head[0] === 0x89 && head[1] === 0x50;
+  } catch {}
+  results.push(['export-image-gen', pngR.ok === true && pngOk]);
+  delete process.env.INKFLOW_TEST_SAVEPATH;
 
   // 7. 主题切换不报错
   await js(`App.setTheme('dark')`);
