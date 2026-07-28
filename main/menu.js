@@ -70,6 +70,8 @@ function buildMenu(win, ctx) {
         { label: '另存为…', accelerator: 'CmdOrCtrl+Shift+S', click: () => send(win, 'save-as') },
         { type: 'separator' },
         { label: '导出为 PDF…', accelerator: 'CmdOrCtrl+Alt+P', click: () => send(win, 'export-pdf') },
+        { label: '导出为 Word…', accelerator: 'CmdOrCtrl+Alt+W', click: () => send(win, 'export-word') },
+        { label: '导出为图片…', click: () => send(win, 'export-image') },
         { label: '导出为 HTML…', click: () => send(win, 'export-html') },
         { type: 'separator' },
         { label: '关闭标签页', accelerator: 'CmdOrCtrl+W', click: () => send(win, 'close-tab') },

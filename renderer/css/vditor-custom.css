@@ -1,6 +1,6 @@
 /* ============ Vditor 外观定制（融入墨流设计体系） ============ */
 
-#vditor .vditor {
+.ink-editor .vditor {
   background: transparent !important;
   border: none !important;
   border-radius: 0 !important;
@@ -9,18 +9,18 @@
 }
 
 /* 干掉 vditor 默认的 .vditor-reset 底色，露出我们的纸/墨底色 */
-#vditor .vditor-ir.vditor-reset,
-#vditor .vditor-wysiwyg.vditor-reset,
-#vditor .vditor-preview.vditor-reset,
-#vditor .vditor-sv.vditor-reset,
-#vditor .vditor-ir > .vditor-reset,
-#vditor .vditor-wysiwyg > .vditor-reset,
-#vditor .vditor-preview > .vditor-reset {
+.ink-editor .vditor-ir.vditor-reset,
+.ink-editor .vditor-wysiwyg.vditor-reset,
+.ink-editor .vditor-preview.vditor-reset,
+.ink-editor .vditor-sv.vditor-reset,
+.ink-editor .vditor-ir > .vditor-reset,
+.ink-editor .vditor-wysiwyg > .vditor-reset,
+.ink-editor .vditor-preview > .vditor-reset {
   background: transparent !important;
 }
 
 /* ---------- 工具栏（默认隐藏，仅作功能载体） ---------- */
-#vditor .vditor-toolbar {
+.ink-editor .vditor-toolbar {
   background: var(--bg-editor) !important;
   border-bottom: 1px solid var(--border) !important;
   padding: 0 16px !important;
@@ -28,33 +28,33 @@
   align-items: center;
   display: none;
 }
-body[data-toolbar="show"] #vditor .vditor-toolbar { display: flex; }
-#vditor .vditor-toolbar--pin { padding-left: 16px !important; }
-#vditor .vditor-toolbar .vditor-tooltipped {
+body[data-toolbar="show"] .ink-editor .vditor-toolbar { display: flex; }
+.ink-editor .vditor-toolbar--pin { padding-left: 16px !important; }
+.ink-editor .vditor-toolbar .vditor-tooltipped {
   color: var(--text-2) !important;
   width: 26px !important;
   height: 26px !important;
   border-radius: 6px !important;
 }
-#vditor .vditor-toolbar .vditor-tooltipped:hover {
+.ink-editor .vditor-toolbar .vditor-tooltipped:hover {
   background: var(--bg-sidebar-hover) !important;
   color: var(--text-1) !important;
   border: none !important;
 }
-#vditor .vditor-toolbar .vditor-tooltipped svg { width: 14px !important; height: 14px !important; }
-#vditor .vditor-toolbar .vditor-menu--current { color: var(--accent) !important; }
-#vditor .vditor-toolbar .vditor-menu__divider { border-color: var(--border) !important; }
-#vditor .vditor-panel { background: var(--bg-elevated) !important; border-color: var(--border) !important; box-shadow: var(--shadow-pop) !important; border-radius: 8px !important; }
-#vditor .vditor-panel .vditor-panel--pin { color: var(--text-1); }
-#vditor .vditor-panel button { color: var(--text-1) !important; background: var(--bg-input) !important; border: none !important; border-radius: 6px !important; }
-#vditor .vditor-panel input { background: var(--bg-input) !important; color: var(--text-1) !important; border: 1px solid var(--border) !important; border-radius: 6px !important; }
+.ink-editor .vditor-toolbar .vditor-tooltipped svg { width: 14px !important; height: 14px !important; }
+.ink-editor .vditor-toolbar .vditor-menu--current { color: var(--accent) !important; }
+.ink-editor .vditor-toolbar .vditor-menu__divider { border-color: var(--border) !important; }
+.ink-editor .vditor-panel { background: var(--bg-elevated) !important; border-color: var(--border) !important; box-shadow: var(--shadow-pop) !important; border-radius: 8px !important; }
+.ink-editor .vditor-panel .vditor-panel--pin { color: var(--text-1); }
+.ink-editor .vditor-panel button { color: var(--text-1) !important; background: var(--bg-input) !important; border: none !important; border-radius: 6px !important; }
+.ink-editor .vditor-panel input { background: var(--bg-input) !important; color: var(--text-1) !important; border: 1px solid var(--border) !important; border-radius: 6px !important; }
 
 /* ---------- 编辑区 ---------- */
-#vditor .vditor-content {
+.ink-editor .vditor-content {
   background: transparent;
 }
-#vditor .vditor-ir,
-#vditor .vditor-wysiwyg {
+.ink-editor .vditor-ir,
+.ink-editor .vditor-wysiwyg {
   background: transparent !important;
   color: var(--text-1);
   font-family: var(--font-editor);
@@ -66,49 +66,49 @@ body[data-toolbar="show"] #vditor .vditor-toolbar { display: flex; }
 }
 /* 内容宽度由 --page-width 控制：滚动容器全宽（滚动条贴窗口右缘），
    文本列通过自适应 padding 居中；底部留白由 vditor 打字机 :after spacer 提供 */
-#vditor .vditor-ir > .vditor-reset,
-#vditor .vditor-wysiwyg > .vditor-reset {
+.ink-editor .vditor-ir > .vditor-reset,
+.ink-editor .vditor-wysiwyg > .vditor-reset {
   max-width: none;
   margin: 0;
   padding-top: 36px !important;
   padding-left: max(28px, calc((100% - var(--page-width, 780px)) / 2)) !important;
   padding-right: max(28px, calc((100% - var(--page-width, 780px)) / 2)) !important;
 }
-#vditor .vditor-ir::selection,
-#vditor .vditor-ir ::selection { background: var(--selection); }
+.ink-editor .vditor-ir::selection,
+.ink-editor .vditor-ir ::selection { background: var(--selection); }
 
 /* IR 标记符号淡化，突出渲染效果 */
-#vditor .vditor-ir .vditor-ir__marker {
+.ink-editor .vditor-ir .vditor-ir__marker {
   color: var(--text-faint) !important;
 }
-#vditor .vditor-ir span.vditor-ir__node--hidden { color: var(--text-faint); }
-#vditor .vditor-ir .vditor-ir__link { color: var(--text-3) !important; }
-#vditor .vditor-ir .vditor-ir__node--expand .vditor-ir__marker--bracket { color: var(--accent); }
+.ink-editor .vditor-ir span.vditor-ir__node--hidden { color: var(--text-faint); }
+.ink-editor .vditor-ir .vditor-ir__link { color: var(--text-3) !important; }
+.ink-editor .vditor-ir .vditor-ir__node--expand .vditor-ir__marker--bracket { color: var(--accent); }
 
 /* 当前块微高亮 */
-#vditor .vditor-ir .vditor-ir__node--active { position: relative; }
+.ink-editor .vditor-ir .vditor-ir__node--active { position: relative; }
 
 /* ---------- 专注模式 ---------- */
-#vditor .vditor-ir > .vditor-reset > * { transition: opacity .35s var(--ease); }
-body[data-focus="on"] #vditor .vditor-ir > .vditor-reset > *:not(.ink-focus-active) { opacity: 0.28; }
+.ink-editor .vditor-ir > .vditor-reset > * { transition: opacity .35s var(--ease); }
+body[data-focus="on"] .ink-editor .vditor-ir > .vditor-reset > *:not(.ink-focus-active) { opacity: 0.28; }
 
 /* ---------- 计数器 / 缩放条：隐藏（用自定义状态栏） ---------- */
-#vditor .vditor-counter { display: none !important; }
-#vditor .vditor-resize { display: none !important; }
+.ink-editor .vditor-counter { display: none !important; }
+.ink-editor .vditor-resize { display: none !important; }
 
 /* ---------- 提示浮层（emoji / @ 等） ---------- */
-#vditor .vditor-hint {
+.ink-editor .vditor-hint {
   background: var(--bg-elevated) !important;
   border: 1px solid var(--border) !important;
   border-radius: 8px !important;
   box-shadow: var(--shadow-pop) !important;
 }
-#vditor .vditor-hint button {
+.ink-editor .vditor-hint button {
   color: var(--text-1) !important;
   border-radius: 6px !important;
 }
-#vditor .vditor-hint button.vditor-hint--current,
-#vditor .vditor-hint button:hover {
+.ink-editor .vditor-hint button.vditor-hint--current,
+.ink-editor .vditor-hint button:hover {
   background: var(--accent-soft) !important;
 }
 
@@ -122,8 +122,8 @@ body[data-focus="on"] #vditor .vditor-ir > .vditor-reset > *:not(.ink-focus-acti
 }
 
 /* ---------- 上传进度等 ---------- */
-#vditor .vditor-tip { background: var(--bg-elevated) !important; color: var(--text-1) !important; border-radius: 8px !important; }
-#vditor .vditor-tip--show { box-shadow: var(--shadow-pop); }
+.ink-editor .vditor-tip { background: var(--bg-elevated) !important; color: var(--text-1) !important; border-radius: 8px !important; }
+.ink-editor .vditor-tip--show { box-shadow: var(--shadow-pop); }
 
 /* 输入框聚焦环 */
-#vditor input:focus, #vditor button:focus { outline: none; }
+.ink-editor input:focus, .ink-editor button:focus { outline: none; }

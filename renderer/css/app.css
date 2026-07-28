@@ -299,7 +299,9 @@ body[data-sidebar="hidden"] #btn-sidebar-toggle { margin-left: 2px; }
 .tab-close:hover { background: var(--bg-sidebar-hover); color: var(--text-1); }
 
 #editor-area { flex: 1; position: relative; min-height: 0; background: var(--bg-editor); }
-#vditor { height: 100%; }
+#editor-hosts { height: 100%; }
+.editor-host { height: 100%; }
+.editor-host.hidden { display: none; }
 
 /* ============ 欢迎页 ============ */
 #welcome {

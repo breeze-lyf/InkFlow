@@ -1,9 +1,14 @@
 // 预加载脚本：安全桥接主进程能力
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('ink', {
   info: () => ipcRenderer.invoke('app:info'),
   ready: () => ipcRenderer.send('renderer:ready'),
+
+  // Electron 32+：File.path 已移除，用 webUtils 取真实路径
+  getFilePath: (f) => {
+    try { return webUtils.getPathForFile(f); } catch { return ''; }
+  },
 
   // 设置 / 最近
   getSettings: () => ipcRenderer.invoke('settings:get'),
@@ -39,6 +44,8 @@ contextBridge.exposeInMainWorld('ink', {
   // 导出
   exportPdf: (payload) => ipcRenderer.invoke('export:pdf', payload),
   exportHtml: (payload) => ipcRenderer.invoke('export:html', payload),
+  exportWord: (payload) => ipcRenderer.invoke('export:word', payload),
+  exportImage: (payload) => ipcRenderer.invoke('export:image', payload),
   readCss: (rel) => ipcRenderer.invoke('css:read', rel),
   isDark: () => ipcRenderer.invoke('theme:get-dark'),
 

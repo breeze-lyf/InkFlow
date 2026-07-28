@@ -8,7 +8,7 @@ const CtxMenu = {
     this.el = $('#ctx-menu');
     document.addEventListener('click', () => this.hide());
     document.addEventListener('contextmenu', (e) => {
-      if (!e.target.closest('.tree-row') && !e.target.closest('.tab')) this.hide();
+      if (!e.target.closest('.tree-row') && !e.target.closest('.tab') && !e.target.closest('.editor-host')) this.hide();
     });
     window.addEventListener('blur', () => this.hide());
   },
@@ -90,8 +90,13 @@ const FileTree = {
 
       row.onclick = (e) => {
         e.stopPropagation();
-        if (entry.isDir) this.toggleDir(node, entry, depth);
-        else App.openFile(entry.path);
+        // 双击文件夹时浏览器会派发两次 click：第二次起忽略，避免"展开又收起=没反应"
+        if (entry.isDir) {
+          if (e.detail > 1) return;
+          this.toggleDir(node, entry, depth);
+        } else {
+          App.openFile(entry.path);
+        }
       };
       row.oncontextmenu = (e) => {
         e.preventDefault();
@@ -100,6 +105,7 @@ const FileTree = {
       };
       row.ondblclick = (e) => {
         e.stopPropagation();
+        e.preventDefault();
         if (!entry.isDir) this._inlineRename(row, entry);
       };
 
@@ -304,7 +310,9 @@ const Outline = {
   },
 
   headingEls() {
-    const ir = $('.vditor-ir');
+    const host = Editor.activeHost && Editor.activeHost();
+    if (!host) return [];
+    const ir = $('.vditor-ir', host);
     return ir ? $$('h1,h2,h3,h4,h5,h6', ir) : [];
   },
 
@@ -320,7 +328,8 @@ const Outline = {
   trackActive: throttle(function () {
     const els = this.headingEls();
     if (!els.length) return;
-    const scroller = $('.vditor-ir > .vditor-reset') || $('.vditor-ir');
+    const host = Editor.activeHost && Editor.activeHost();
+    const scroller = host ? ($('.vditor-ir > .vditor-reset', host) || $('.vditor-ir', host)) : null;
     const top = scroller ? scroller.getBoundingClientRect().top : 0;
     let active = 0;
     els.forEach((h, i) => {
@@ -329,8 +338,9 @@ const Outline = {
     $$('.outline-item').forEach((item, i) => item.classList.toggle('active', i === active));
   }, 120),
 
-  bindScroll() {
-    const scroller = $('.vditor-ir > .vditor-reset') || $('.vditor-ir');
+  // 每个编辑器实例创建时绑定自己的滚动监听
+  bindScroll(host) {
+    const scroller = $('.vditor-ir > .vditor-reset', host) || $('.vditor-ir', host);
     if (scroller) scroller.addEventListener('scroll', () => this.trackActive(), { passive: true });
   },
 };

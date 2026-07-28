@@ -1,4 +1,4 @@
-// ============ 导出（PDF / HTML） ============
+// ============ 导出（PDF / HTML / Word / 图片） ============
 'use strict';
 
 const Exporter = {
@@ -11,20 +11,48 @@ const Exporter = {
     return `${this._base()}/node_modules/vditor/dist/js/katex/katex.min.css`;
   },
 
-  async exportPdf() {
-    const tab = App.activeTab();
-    if (!tab) { toast('没有可导出的文档'); return; }
-    const html = Editor.getExportHtml();
-    const dark = false; // PDF 始终使用浅色，便于打印
-    const cssLinks = [
+  _lightCssLinks() {
+    return [
       `${this._base()}/renderer/css/content/inkflow-light.css`,
       `${this._base()}/node_modules/vditor/dist/js/highlight.js/styles/github.min.css`,
       this._katexCssHref(),
     ];
+  },
+
+  async exportPdf() {
+    const tab = App.activeTab();
+    if (!tab) { toast('没有可导出的文档'); return; }
+    const html = Editor.getExportHtml();
+    const cssLinks = this._lightCssLinks();
     toast('正在生成 PDF…', 30000);
     const r = await ink.exportPdf({ html, cssLinks, suggestedName: P.stem(tab.name) + '.pdf' });
     $('#toast').innerHTML = '';
     if (r.ok) toast('PDF 已导出');
+    else if (!r.canceled) toast('导出失败：' + (r.error || ''));
+  },
+
+  async exportWord() {
+    const tab = App.activeTab();
+    if (!tab) { toast('没有可导出的文档'); return; }
+    const html = Editor.getExportHtml();
+    const themeCss = await ink.readCss('renderer/css/content/inkflow-light.css');
+    const cssTexts = themeCss.ok ? [themeCss.content] : [];
+    toast('正在生成 Word 文档…', 30000);
+    const r = await ink.exportWord({ html, cssTexts, suggestedName: P.stem(tab.name) + '.docx' });
+    $('#toast').innerHTML = '';
+    if (r.ok) toast('Word 文档已导出');
+    else if (!r.canceled) toast('导出失败：' + (r.error || ''));
+  },
+
+  async exportImage() {
+    const tab = App.activeTab();
+    if (!tab) { toast('没有可导出的文档'); return; }
+    const html = Editor.getExportHtml();
+    const cssLinks = this._lightCssLinks();
+    toast('正在生成图片…', 30000);
+    const r = await ink.exportImage({ html, cssLinks, suggestedName: P.stem(tab.name) + '.png' });
+    $('#toast').innerHTML = '';
+    if (r.ok) toast('图片已导出');
     else if (!r.canceled) toast('导出失败：' + (r.error || ''));
   },
 

@@ -34,6 +34,7 @@ const settings = new Store(path.join(userData, 'settings.json'), {
 const recentStore = new Store(path.join(userData, 'recent.json'), { files: [], folders: [] });
 
 const MD_EXTS = ['.md', '.markdown', '.mdown', '.mdtxt', '.text', '.txt'];
+const IMG_EXTS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'];
 
 function addRecent(p, type) {
   if (!p) return;
@@ -240,8 +241,11 @@ function registerIPC() {
         }
         if (st.isDirectory()) {
           entries.push({ name, path: full, isDir: true });
-        } else if (MD_EXTS.includes(path.extname(name).toLowerCase())) {
-          entries.push({ name, path: full, isDir: false, mtime: st.mtimeMs, size: st.size });
+        } else {
+          const ext = path.extname(name).toLowerCase();
+          if (MD_EXTS.includes(ext) || IMG_EXTS.includes(ext)) {
+            entries.push({ name, path: full, isDir: false, isImage: IMG_EXTS.includes(ext), mtime: st.mtimeMs, size: st.size });
+          }
         }
       }
       entries.sort((a, b) => {
@@ -458,6 +462,86 @@ ${cssLinks.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
     }
   });
 
+  ipcMain.handle('export:word', async (e, { html, cssTexts, suggestedName }) => {
+    const savePath = await dialog.showSaveDialog(mainWin, {
+      defaultPath: suggestedName,
+      filters: [{ name: 'Word 文档', extensions: ['docx'] }],
+    });
+    if (!savePath) return { ok: false, canceled: true };
+    try {
+      const HTMLtoDOCX = require('html-to-docx');
+      // file:// 图片内联为 base64（html-to-docx 无法读取本地文件）
+      const inlined = html.replace(/(<img[^>]+src=")file:\/\/([^"]+)(")/g, (m, pre, enc, post) => {
+        try {
+          const p = decodeURI(enc);
+          const ext = path.extname(p).slice(1).toLowerCase().replace('jpg', 'jpeg') || 'png';
+          const b64 = fs.readFileSync(p).toString('base64');
+          return `${pre}data:image/${ext};base64,${b64}${post}`;
+        } catch {
+          return m;
+        }
+      });
+      const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${(cssTexts || []).join('\n')}</style></head><body>${inlined}</body></html>`;
+      const buf = await HTMLtoDOCX(doc, null, {
+        table: { row: { cantSplit: true } },
+        footer: false,
+        pageNumber: false,
+      });
+      fs.writeFileSync(savePath, buf);
+      shell.showItemInFolder(savePath);
+      return { ok: true, path: savePath };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('export:image', async (e, { html, cssLinks, suggestedName }) => {
+    const savePath = await dialog.showSaveDialog(mainWin, {
+      defaultPath: suggestedName,
+      filters: [{ name: 'PNG 图片', extensions: ['png'] }],
+    });
+    if (!savePath) return { ok: false, canceled: true };
+
+    const tmpHtml = path.join(os.tmpdir(), `inkflow-img-${Date.now()}.html`);
+    const doc = `<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+${(cssLinks || []).map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
+<style>
+  body { padding: 48px 52px; max-width: 820px; margin: 0 auto; background: #faf9f5; }
+  img { max-width: 100% !important; }
+</style>
+</head><body class="vditor-reset">${html}</body></html>`;
+    fs.writeFileSync(tmpHtml, doc, 'utf-8');
+
+    let shotWin = new BrowserWindow({
+      show: false,
+      width: 900,
+      height: 1200,
+      webPreferences: { sandbox: true, contextIsolation: true },
+    });
+    try {
+      await shotWin.loadFile(tmpHtml);
+      await shotWin.webContents.setZoomFactor(2); // 2x 输出更清晰
+      await new Promise((r) => setTimeout(r, 1100));
+      const h = await shotWin.webContents.executeJavaScript(
+        'Math.min((document.body.scrollHeight || 800) + 20, 7000)'
+      );
+      shotWin.setContentSize(900, Math.max(480, Math.ceil(h)));
+      await new Promise((r) => setTimeout(r, 500));
+      const img = await shotWin.webContents.capturePage();
+      fs.writeFileSync(savePath, img.toPNG());
+      shell.showItemInFolder(savePath);
+      return { ok: true, path: savePath };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    } finally {
+      shotWin.destroy();
+      try {
+        fs.unlinkSync(tmpHtml);
+      } catch {}
+    }
+  });
+
   ipcMain.handle('css:read', (e, relPath) => {
     // 读取应用内 css（供 HTML 导出内联）
     try {
@@ -516,7 +600,7 @@ async function runSmoke() {
         e.scrollTop = 900;
         return sel + ' sh=' + e.scrollHeight + ' ch=' + e.clientHeight + ' before=' + before + ' after=' + e.scrollTop + ' overflow=' + getComputedStyle(e).overflowY;
       };
-      const reset = document.querySelector('.vditor-ir > .vditor-reset');
+      const reset = document.querySelector('.editor-host:not(.hidden) .vditor-ir > .vditor-reset');
       const blocks = reset ? Array.from(reset.children).map((c, i) => {
         const r = c.getBoundingClientRect();
         const cs = getComputedStyle(c);
@@ -557,7 +641,7 @@ async function runSmoke() {
     } else if (shot.startsWith('scroll-')) {
       const y = parseInt(shot.split('-')[1], 10) || 0;
       await mainWin.webContents.executeJavaScript(`
-        (document.querySelector('.vditor-ir > .vditor-reset') || {scrollTop: 0}).scrollTop = ${y};
+        (document.querySelector('.editor-host:not(.hidden) .vditor-ir > .vditor-reset') || {scrollTop: 0}).scrollTop = ${y};
         'ok'`);
     }
     await wait(1400);
@@ -626,31 +710,31 @@ async function runFuncSmoke() {
   const demoPath = path.join(__dirname, '..', 'samples', '功能演示.md');
   mainWin.webContents.send('menu:action', { action: 'open-path', payload: demoPath });
   await wait(2600);
-  await js(`(document.querySelector('.vditor-ir > .vditor-reset')||{}).scrollTop = 0`);
+  await js(`(document.querySelector('.editor-host:not(.hidden) .vditor-ir > .vditor-reset')||{}).scrollTop = 0`);
   await wait(300);
   const anchorClicked = await js(`(() => {
-    const spans = document.querySelectorAll('.vditor-ir [data-target-id]');
+    const spans = document.querySelectorAll('.editor-host:not(.hidden) .vditor-ir [data-target-id]');
     if (!spans.length) return 'no-anchor';
     const s = spans[spans.length - 1]; // 最后一项目录（页面底部标题）
     s.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     return 'clicked:' + s.getAttribute('data-target-id');
   })()`);
   await wait(1200);
-  const anchorScrolled = await js(`(document.querySelector('.vditor-ir > .vditor-reset')||{scrollTop:0}).scrollTop`);
+  const anchorScrolled = await js(`(document.querySelector('.editor-host:not(.hidden) .vditor-ir > .vditor-reset')||{scrollTop:0}).scrollTop`);
   results.push(['toc-anchor', String(anchorClicked).startsWith('clicked:') && anchorScrolled > 100]);
 
   // 6.8 编辑区高度回归：内层滚动容器应接近满高（防 padding 挤压）
   const hRatio = await js(`(() => {
-    const ir = document.querySelector('.vditor-ir');
-    const pre = document.querySelector('.vditor-ir > .vditor-reset');
+    const ir = document.querySelector('.editor-host:not(.hidden) .vditor-ir');
+    const pre = document.querySelector('.editor-host:not(.hidden) .vditor-ir > .vditor-reset');
     return pre && ir && ir.clientHeight ? pre.clientHeight / ir.clientHeight : 0;
   })()`);
   results.push(['editor-full-height', hRatio > 0.85]);
 
   // 6.9 页面宽度切换：超宽时文本列变宽（padding 减小），滚动容器保持全宽
   const pw = await js(`(() => {
-    const pre = document.querySelector('.vditor-ir > .vditor-reset');
-    const ir = document.querySelector('.vditor-ir');
+    const pre = document.querySelector('.editor-host:not(.hidden) .vditor-ir > .vditor-reset');
+    const ir = document.querySelector('.editor-host:not(.hidden) .vditor-ir');
     const before = { preW: pre.clientWidth, pad: parseInt(getComputedStyle(pre).paddingLeft) };
     App.setPageWidth('wide');
     const mid = parseInt(getComputedStyle(pre).paddingLeft);
@@ -671,6 +755,66 @@ async function runFuncSmoke() {
     return { before, hidden, back };
   })()`);
   results.push(['sidebar-toggle', sb.hidden === 'hidden' && sb.back === sb.before]);
+
+  // 6.96 编辑器实例池：切走再切回，宿主元素应保持同一个（零重渲染）
+  const reuse = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const a = App.tabs.find(t => t.path === ${JSON.stringify(testFile)});
+    if (!a) return { fail: 'tab missing' };
+    const inst1 = Editor.instances.get(a.key);
+    if (!inst1) return { fail: 'no instance' };
+    const host1 = inst1.host;
+    App.newUntitled();
+    await sleep(900);
+    await App.activate(App.tabs.indexOf(a));
+    await sleep(300);
+    const inst2 = Editor.instances.get(a.key);
+    const same = host1 === inst2.host;
+    const visible = !inst2.host.classList.contains('hidden');
+    const intact = Editor.getValue(a.key) === a.savedValue;
+    App.closeTab(App.tabs.findIndex(t => t.path === null), true);
+    await sleep(300);
+    return { same, visible, intact };
+  })()`);
+  results.push(['instance-reuse', !!(reuse.same && reuse.visible && reuse.intact)]);
+
+  // 6.97 文件树折叠：行点击展开/收起 + 全部折叠按钮
+  const samplesDir = path.join(__dirname, '..', 'samples');
+  mainWin.webContents.send('menu:action', { action: 'open-path', payload: samplesDir });
+  await wait(1300);
+  const tree = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const row = document.querySelector('.tree-row[data-is-dir="1"]');
+    if (!row) return { fail: 'no dir row' };
+    const node = row.parentElement;
+    row.click(); await sleep(500);
+    const opened = node.classList.contains('open') && !!node.querySelector('.tree-children');
+    row.click(); await sleep(300);
+    const closed = !node.classList.contains('open');
+    row.click(); await sleep(500);
+    document.querySelector('#btn-collapse').click(); await sleep(500);
+    // render() 会整体重建节点，必须重新查询（旧引用已脱离 DOM）
+    const allClosed = document.querySelectorAll('.tree-node.open').length === 0;
+    return { opened, closed, allClosed };
+  })()`);
+  results.push(['tree-collapse', !!(tree.opened && tree.closed && tree.allClosed)]);
+  if (!(tree.opened && tree.closed && tree.allClosed)) console.log('[debug] tree:', JSON.stringify(tree));
+
+  // 6.98 Word 生成管线（主进程直接验证转换器，不弹对话框）
+  try {
+    const HTMLtoDOCX = require('html-to-docx');
+    const buf = await HTMLtoDOCX(
+      '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><h1>墨流测试</h1><p>Word 导出管线正常。</p></body></html>',
+      null, {}
+    );
+    results.push(['word-gen', !!(buf && buf.length > 1000 && buf[0] === 0x50 && buf[1] === 0x4b)]);
+  } catch (err) {
+    console.log('[func] word-gen error:', err.message);
+    results.push(['word-gen', false]);
+  }
+
+  // 6.99 拖拽路径桥接存在
+  results.push(['webutils-bridge', await js(`typeof ink.getFilePath === 'function'`)]);
 
   // 7. 主题切换不报错
   await js(`App.setTheme('dark')`);

@@ -31,7 +31,6 @@ const App = {
 
     await Editor.init();
     Editor.setTypewriter(this.settings.typewriter !== false);
-    Outline.bindScroll();
 
     this._bindUI();
     this._bindMenu();
@@ -53,9 +52,20 @@ const App = {
       await FileTree.setRoot(null);
     }
 
+    // 恢复标签：只登记不逐个激活（编辑器实例懒创建，首屏只渲染活动标签）
     const paths = this.settings.openTabs || [];
     for (const p of paths) {
-      if (await ink.exists(p)) await this.openFile(p, true);
+      if (!(await ink.exists(p))) continue;
+      const r = await ink.readFile(p);
+      if (!r.ok) continue;
+      this.tabs.push({
+        key: p,
+        path: p,
+        name: P.basename(p),
+        dirty: false,
+        savedValue: r.content,
+        cachedValue: r.content,
+      });
     }
     const activePath = this.settings.activeTab;
     const idx = this.tabs.findIndex((t) => t.path === activePath);
@@ -74,6 +84,7 @@ const App = {
     const r = await ink.readFile(path);
     if (!r.ok) { toast('无法打开文件：' + P.basename(path)); return; }
     this.tabs.push({
+      key: path,
       path,
       name: P.basename(path),
       dirty: false,
@@ -89,6 +100,7 @@ const App = {
   newUntitled() {
     this.untitledSeq += 1;
     this.tabs.push({
+      key: 'untitled:' + this.untitledSeq,
       path: null,
       name: `未命名-${this.untitledSeq}.md`,
       dirty: false,
@@ -101,14 +113,12 @@ const App = {
 
   async activate(i) {
     if (i < 0 || i >= this.tabs.length) return;
-    // 暂存当前内容
-    const prev = this.activeTab();
-    if (prev && Editor.ready) prev.cachedValue = Editor.getValue();
-
     this.active = i;
     const tab = this.activeTab();
-    Editor.setValue(tab.cachedValue);
-    tab.dirty = tab.cachedValue !== tab.savedValue;
+    // 实例池：切换只显隐，不重渲染；首次激活懒创建
+    await Editor.activate(tab.key, tab);
+    const cur = Editor.getValue(tab.key);
+    tab.dirty = (cur === null ? tab.cachedValue : cur) !== tab.savedValue;
 
     this._renderTabs();
     this._syncWelcome();
@@ -142,13 +152,14 @@ const App = {
       }
     }
     const wasActive = i === this.active;
+    Editor.destroy(tab.key);
     this.tabs.splice(i, 1);
     if (this.active > i) this.active -= 1;
     if (wasActive) {
       if (this.tabs.length) await this.activate(Math.min(this.active, this.tabs.length - 1));
       else {
         this.active = -1;
-        Editor.setValue('');
+        Editor.clearActive();
         this._renderTabs();
         this._syncWelcome();
         this.updateStatus();
@@ -171,7 +182,9 @@ const App = {
     const tab = this.tabs.find((t) => t.path === from);
     if (tab) {
       tab.path = to;
+      tab.key = to;
       tab.name = P.basename(to);
+      Editor.rekey(from, to);
       this._renderTabs();
       this.updateStatus();
     }
@@ -183,10 +196,12 @@ const App = {
   },
 
   /* ================= 输入 & 保存 ================= */
-  onEditorInput() {
-    const tab = this.activeTab();
+  onEditorInput(key) {
+    const tab = this.tabs.find((t) => t.key === key) || this.activeTab();
     if (!tab) return;
-    const val = Editor.getValue();
+    const val = Editor.getValue(tab.key);
+    if (val === null) return;
+    tab.cachedValue = val;
     tab.dirty = val !== tab.savedValue;
     this._renderTabs();
     this.updateStatus();
@@ -203,10 +218,12 @@ const App = {
     const tab = this.activeTab();
     if (!tab || !tab.dirty) return;
     if (!tab.path) return; // 未命名文件不自动落盘
-    const val = Editor.getValue();
+    const val = Editor.getValue(tab.key);
+    if (val === null) return;
     const r = await ink.writeFile(tab.path, val);
     if (r.ok) {
       tab.savedValue = val;
+      tab.cachedValue = val;
       tab.dirty = false;
       this._renderTabs();
       this.updateStatus(true);
@@ -218,21 +235,25 @@ const App = {
     const idx = i === undefined ? this.active : i;
     const tab = this.tabs[idx];
     if (!tab) return false;
-    let val;
-    if (idx === this.active) val = Editor.getValue();
-    else val = tab.cachedValue;
+    // 实例池：直接从该标签的实例取值（不活跃标签用缓存）
+    const live = Editor.getValue(tab.key);
+    const val = live === null ? tab.cachedValue : live;
 
     if (!tab.path) {
       const p = await ink.saveAsDialog(tab.name);
       if (!p) return false;
+      const oldKey = tab.key;
       tab.path = p;
+      tab.key = p;
       tab.name = P.basename(p);
+      Editor.rekey(oldKey, p);
       ink.addRecent(p, 'file');
       FileTree.refresh();
     }
     const r = await ink.writeFile(tab.path, val);
     if (!r.ok) { toast('保存失败：' + (r.error || '')); return false; }
     tab.savedValue = val;
+    tab.cachedValue = val;
     tab.dirty = false;
     this._renderTabs();
     this.updateStatus(true);
@@ -246,8 +267,11 @@ const App = {
     if (!tab) return;
     const p = await ink.saveAsDialog(tab.name);
     if (!p) return;
+    const oldKey = tab.key;
     tab.path = p;
+    tab.key = p;
     tab.name = P.basename(p);
+    Editor.rekey(oldKey, p);
     await this.save();
     ink.addRecent(p, 'file');
     toast('已另存为 ' + P.basename(p));
@@ -328,17 +352,18 @@ const App = {
       if (e.key === 'Escape' && Overlay.isOpen()) Overlay.close();
     });
 
-    // 拖拽文件进窗口
+    // 拖拽文件进窗口（.md 直接打开；图片插入当前文档）
     window.addEventListener('dragover', (e) => e.preventDefault());
     window.addEventListener('drop', async (e) => {
       e.preventDefault();
       const files = Array.from(e.dataTransfer.files || []);
       for (const f of files) {
-        const p = f.path;
+        const p = ink.getFilePath(f);
         if (!p) continue;
         const ext = P.extname(p).toLowerCase();
         if (['.md', '.markdown', '.mdown', '.txt'].includes(ext)) {
           await this.openFile(p);
+          toast('已打开 ' + P.basename(p));
         } else if (['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(ext)) {
           const tab = this.activeTab();
           if (tab && tab.path) {
@@ -347,6 +372,8 @@ const App = {
               const rel = r.relPath.split('/').map(encodeURIComponent).join('/');
               Editor.insert(`![${P.stem(p)}](${rel})\n`);
             }
+          } else {
+            toast('请先保存文件，再插入图片');
           }
         }
       }
@@ -357,28 +384,25 @@ const App = {
       m.addEventListener('click', (e) => e.target.closest('.modal').classList.add('hidden'));
     });
 
-    // 编辑器内链接点击拦截（capture 阶段，覆盖 vditor 默认行为）
-    $('#vditor').addEventListener('click', (e) => {
-      // [toc] 目录项：span[data-target-id] → 滚动到对应标题
-      const tocSpan = e.target.closest('[data-target-id]');
-      if (tocSpan) {
-        e.preventDefault();
-        e.stopPropagation();
-        const id = tocSpan.getAttribute('data-target-id');
-        const target = document.getElementById(id) || $(`.vditor-ir [id="${CSS.escape(id)}"]`);
-        if (target) {
-          target.scrollIntoView({ block: 'start', behavior: 'smooth' });
-        } else {
-          this._scrollToAnchor('#' + (tocSpan.textContent || ''));
-        }
-        return;
-      }
-      const a = e.target.closest('a');
-      if (!a) return;
+    // 编辑器内右键菜单（页面宽度等）
+    $('#editor-hosts').addEventListener('contextmenu', (e) => {
+      if (!e.target.closest('.editor-host')) return;
       e.preventDefault();
       e.stopPropagation();
-      this.handleLinkClick(a);
-    }, true);
+      const w = this.settings.pageWidth || 'normal';
+      CtxMenu.show(e.clientX, e.clientY, [
+        { label: '加粗', action: () => Editor.command('bold') },
+        { label: '斜体', action: () => Editor.command('italic') },
+        { label: '行内代码', action: () => Editor.command('inline-code') },
+        '-',
+        { label: `${w === 'normal' ? '✓ ' : ''}页面宽度：正常`, action: () => this.setPageWidth('normal') },
+        { label: `${w === 'wide' ? '✓ ' : ''}页面宽度：超宽`, action: () => this.setPageWidth('wide') },
+        '-',
+        { label: '导出为 PDF…', action: () => Exporter.exportPdf() },
+        { label: '导出为 Word…', action: () => Exporter.exportWord() },
+        { label: '导出为图片…', action: () => Exporter.exportImage() },
+      ]);
+    });
   },
 
   async openFileDialog() {
@@ -572,6 +596,8 @@ const App = {
       { icon: 'cmd', title: '关闭当前标签页', kbd: '⌘W', run: () => this.closeTab(this.active) },
       { icon: 'search', title: '快速打开文件', kbd: '⌘P', run: () => Overlay.open('quick') },
       { icon: 'cmd', title: '导出为 PDF…', kbd: '⌥⌘P', run: () => Exporter.exportPdf() },
+      { icon: 'cmd', title: '导出为 Word…', kbd: '⌥⌘W', run: () => Exporter.exportWord() },
+      { icon: 'cmd', title: '导出为图片…', run: () => Exporter.exportImage() },
       { icon: 'cmd', title: '导出为 HTML…', run: () => Exporter.exportHtml() },
       { icon: 'cmd', title: '切换侧边栏', kbd: '⇧⌘L', run: () => this.toggleSidebar() },
       { icon: 'cmd', title: '切换大纲视图', kbd: '⇧⌘J', run: () => { this.toggleSidebar(true); this.switchPanel('outline'); } },
@@ -628,6 +654,8 @@ const App = {
         case 'save': this.save(); break;
         case 'save-as': this.saveAs(); break;
         case 'export-pdf': Exporter.exportPdf(); break;
+        case 'export-word': Exporter.exportWord(); break;
+        case 'export-image': Exporter.exportImage(); break;
         case 'export-html': Exporter.exportHtml(); break;
         case 'close-tab': if (this.active >= 0) this.closeTab(this.active); break;
         case 'close-all-tabs': while (this.tabs.length) await this.closeTab(this.tabs.length - 1, true); break;
@@ -724,7 +752,9 @@ const App = {
     };
     const target = norm(href);
     if (!target) return;
-    const headings = $$('.vditor-ir h1, .vditor-ir h2, .vditor-ir h3, .vditor-ir h4, .vditor-ir h5, .vditor-ir h6');
+    const host = Editor.activeHost && Editor.activeHost();
+    if (!host) return;
+    const headings = $$('.vditor-ir h1, .vditor-ir h2, .vditor-ir h3, .vditor-ir h4, .vditor-ir h5, .vditor-ir h6', host);
     const hit = headings.find((h) => {
       const t = norm(h.textContent);
       return t && (t === target || t.includes(target) || target.includes(t));
