@@ -345,6 +345,67 @@ const Editor = {
     this.vditor.focus();
   },
 
+  // 块级格式：标题级别（1-6）与正文（0）。
+  // 应用标题走 vditor 内置热键（⌥⌘N）；切回正文走工具栏标题按钮（当前级别再点一次即降级）
+  heading(level) {
+    const host = this.activeHost();
+    if (!this.vditor || !host) return false;
+    const pre = this._scroller(host);
+    if (!pre) return false;
+    pre.focus();
+
+    if (level >= 1 && level <= 6) {
+      pre.dispatchEvent(new KeyboardEvent('keydown', {
+        key: String(level),
+        code: 'Digit' + level,
+        altKey: true,
+        metaKey: true,
+        bubbles: true,
+        cancelable: true,
+      }));
+      return true;
+    }
+    if (level === 0) {
+      const block = this._currentBlock(pre);
+      if (!block || !/^H[1-6]$/.test(block.tagName || '')) return true; // 已是正文
+      const cur = parseInt(block.tagName.slice(1), 10);
+      // 先把 range 重置到块首，让 vditor 保存新鲜选区，再点按钮降级
+      const range = document.createRange();
+      range.selectNodeContents(block);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      const elements = this.vditor.vditor.toolbar && this.vditor.vditor.toolbar.elements;
+      const headings = elements && elements.headings;
+      const btn = (headings && headings.querySelector(`button[data-tag="h${cur}"]`))
+        || host.querySelector(`button[data-tag="h${cur}"]`);
+      if (!btn) return false;
+      btn.click();
+      return true;
+    }
+    return false;
+  },
+
+  // 当前光标所在的顶层块元素
+  _currentBlock(pre) {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return null;
+    let node = sel.anchorNode;
+    if (!node || !pre.contains(node)) return null;
+    if (node.nodeType === 3) node = node.parentElement;
+    while (node && node.parentElement !== pre) node = node.parentElement;
+    return node || null;
+  },
+
+  // 当前光标所在块的标题级别（0 = 非标题）
+  _currentBlockHeading(pre) {
+    const block = this._currentBlock(pre);
+    if (!block) return 0;
+    const m = /^H([1-6])$/.exec(block.tagName || '');
+    return m ? parseInt(m[1], 10) : 0;
+  },
+
   // 触发工具栏命令（加粗/斜体等）
   command(name) {
     const elements = this.vditor && this.vditor.vditor.toolbar && this.vditor.vditor.toolbar.elements;

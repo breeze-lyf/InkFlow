@@ -343,10 +343,10 @@ const App = {
       document.addEventListener('mouseup', up);
     });
 
-    // 快捷键：⌘1..9 切换标签
+    // 快捷键：⌥1..9 切换标签（⌘1..6 留给标题格式，见 vditor 热键与菜单）
     document.addEventListener('keydown', (e) => {
-      if (e.metaKey && !e.shiftKey && /^[1-9]$/.test(e.key)) {
-        const i = parseInt(e.key) - 1;
+      if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey && /^Digit[1-9]$/.test(e.code)) {
+        const i = parseInt(e.code.slice(5), 10) - 1;
         if (i < this.tabs.length) { e.preventDefault(); this.activate(i); }
       }
       if (e.key === 'Escape' && Overlay.isOpen()) Overlay.close();
@@ -611,7 +611,18 @@ const App = {
       { icon: 'cmd', title: '页面宽度：超宽', run: () => this.setPageWidth('wide') },
       { icon: 'cmd', title: '放大字号', kbd: '⌘=', run: () => this.zoom(1) },
       { icon: 'cmd', title: '缩小字号', kbd: '⌘-', run: () => this.zoom(-1) },
-      { icon: 'cmd', title: '重置字号', kbd: '⌘0', run: () => this.zoom(0) },
+      { icon: 'cmd', title: '重置字号', kbd: '⌥⌘0', run: () => this.zoom(0) },
+      { icon: 'cmd', title: '正文', kbd: '⌘0', run: () => Editor.heading(0) },
+      { icon: 'cmd', title: '标题 1', kbd: '⌘1', run: () => Editor.heading(1) },
+      { icon: 'cmd', title: '标题 2', kbd: '⌘2', run: () => Editor.heading(2) },
+      { icon: 'cmd', title: '标题 3', kbd: '⌘3', run: () => Editor.heading(3) },
+      { icon: 'cmd', title: '标题 4', kbd: '⌘4', run: () => Editor.heading(4) },
+      { icon: 'cmd', title: '标题 5', kbd: '⌘5', run: () => Editor.heading(5) },
+      { icon: 'cmd', title: '标题 6', kbd: '⌘6', run: () => Editor.heading(6) },
+      { icon: 'cmd', title: '引用', kbd: '⌥⌘Q', run: () => Editor.command('quote') },
+      { icon: 'cmd', title: '无序列表', kbd: '⌥⌘U', run: () => Editor.command('list') },
+      { icon: 'cmd', title: '有序列表', kbd: '⌥⌘O', run: () => Editor.command('ordered-list') },
+      { icon: 'cmd', title: '任务列表', kbd: '⌥⌘X', run: () => Editor.command('check') },
       { icon: 'cmd', title: '插入图片…', kbd: '⌥⌘I', run: () => Editor.insertLocalImages() },
       { icon: 'cmd', title: '插入表格', kbd: '⌥⌘T', run: () => Editor.command('table') },
       { icon: 'cmd', title: '插入代码块', kbd: '⌥⌘C', run: () => Editor.command('code') },
@@ -660,7 +671,12 @@ const App = {
         case 'close-tab': if (this.active >= 0) this.closeTab(this.active); break;
         case 'close-all-tabs': while (this.tabs.length) await this.closeTab(this.tabs.length - 1, true); break;
         case 'close-overlays': Overlay.close(); $$('.modal').forEach((m) => m.classList.add('hidden')); break;
-        case 'format': Editor.command(payload); break;
+        case 'format': {
+          if (/^h[1-6]$/.test(payload)) Editor.heading(parseInt(payload.slice(1), 10));
+          else if (payload === 'paragraph') Editor.heading(0);
+          else Editor.command(payload);
+          break;
+        }
         case 'insert-image': Editor.insertLocalImages(); break;
         case 'quick-open': Overlay.open('quick'); break;
         case 'command-palette': Overlay.open('palette'); break;

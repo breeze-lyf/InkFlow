@@ -851,6 +851,43 @@ async function runFuncSmoke() {
   results.push(['export-image-gen', pngR.ok === true && pngOk]);
   delete process.env.INKFLOW_TEST_SAVEPATH;
 
+  // 6.996 块级格式快捷键：⌘2 应用二级标题、⌘0 恢复正文（先在测试文档标签上进行）
+  await js(`App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}))`);
+  await wait(600);
+  const hd = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    Editor.setValue('快捷键测试行');
+    await sleep(400);
+    const pre = document.querySelector('.editor-host:not(.hidden) .vditor-ir > .vditor-reset');
+    const range = document.createRange();
+    range.selectNodeContents(pre.firstElementChild || pre);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges(); sel.addRange(range);
+    Editor.heading(2);
+    await sleep(500);
+    const asH2 = Editor.getValue().trim();
+    const anchor = window.getSelection().anchorNode;
+    const level = Editor._currentBlockHeading(pre);
+    const anchorInfo = anchor ? (anchor.nodeName + '/' + (anchor.parentElement ? anchor.parentElement.tagName : 'no-parent')) : 'none';
+    Editor.heading(0);
+    await sleep(500);
+    const asPara = Editor.getValue().trim();
+    // 诊断：工具栏按钮点击路径
+    const inHost = document.querySelectorAll('.editor-host:not(.hidden) [data-tag="h2"]').length;
+    const inBody = document.querySelectorAll('[data-tag="h2"]').length;
+    const btn = document.querySelector('.editor-host:not(.hidden) [data-tag="h2"]');
+    let asBtn = 'no-btn';
+    if (btn) {
+      btn.click();
+      await sleep(500);
+      asBtn = Editor.getValue().trim();
+    }
+    return { asH2, asPara, level, anchorInfo, inHost, inBody, asBtn };
+  })()`);
+  results.push(['heading-shortcut', hd.asH2.startsWith('## ') && !hd.asPara.startsWith('#')]);
+  console.log('[debug] heading:', JSON.stringify(hd));
+
   // 7. 主题切换不报错
   await js(`App.setTheme('dark')`);
   await wait(600);
