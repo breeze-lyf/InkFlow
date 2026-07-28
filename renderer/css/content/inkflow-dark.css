@@ -1,0 +1,157 @@
+/* ============ 墨流内容主题 · 墨（深色） ============ */
+
+.vditor-reset {
+  --ink-text: #dcd9d0;
+  --ink-text-2: #92908a;
+  --ink-text-3: #63615b;
+  --ink-faint: #45443f;
+  --ink-accent: #93a1ff;
+  --ink-accent-strong: #aab6ff;
+  --ink-border: rgba(235, 230, 215, 0.14);
+  --ink-code-bg: rgba(235, 230, 215, 0.09);
+  --ink-quote-bg: rgba(235, 230, 215, 0.05);
+  --ink-mark: rgba(255, 212, 0, 0.28);
+  --ink-inline-code: #ff8fa8;
+  --ink-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --ink-mono: "SF Mono", "JetBrains Mono", Menlo, "Sarasa Mono SC", Consolas, monospace;
+
+  color: var(--ink-text);
+  font-family: var(--ink-font);
+  line-height: 1.8;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.vditor-reset h1, .vditor-reset h2, .vditor-reset h3,
+.vditor-reset h4, .vditor-reset h5, .vditor-reset h6 {
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--ink-text);
+  margin: 1.4em 0 0.55em;
+  letter-spacing: 0.01em;
+}
+.vditor-reset h1 { font-size: 1.72em; padding-bottom: 0.28em; border-bottom: 1px solid var(--ink-border); }
+.vditor-reset h2 { font-size: 1.42em; padding-bottom: 0.22em; border-bottom: 1px solid var(--ink-border); }
+.vditor-reset h3 { font-size: 1.18em; }
+.vditor-reset h4 { font-size: 1.05em; }
+.vditor-reset h5 { font-size: 0.95em; }
+.vditor-reset h6 { font-size: 0.9em; color: var(--ink-text-2); }
+
+.vditor-reset p { margin: 0.75em 0; }
+.vditor-reset a {
+  color: var(--ink-accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color .15s;
+}
+.vditor-reset a:hover { border-bottom-color: var(--ink-accent); }
+.vditor-reset strong { font-weight: 650; }
+.vditor-reset em { font-style: italic; }
+.vditor-reset s { color: var(--ink-text-3); }
+.vditor-reset mark {
+  background: var(--ink-mark);
+  color: inherit;
+  padding: 0 3px;
+  border-radius: 3px;
+}
+.vditor-reset sup, .vditor-reset sub { font-size: 0.75em; }
+
+.vditor-reset code:not(pre code) {
+  font-family: var(--ink-mono);
+  font-size: 0.86em;
+  color: var(--ink-inline-code);
+  background: var(--ink-code-bg);
+  padding: 0.15em 0.42em;
+  border-radius: 5px;
+}
+
+.vditor-reset blockquote {
+  margin: 1em 0;
+  padding: 0.6em 1.1em;
+  border-left: 3px solid var(--ink-accent);
+  background: var(--ink-quote-bg);
+  border-radius: 0 8px 8px 0;
+  color: var(--ink-text-2);
+}
+.vditor-reset blockquote p { margin: 0.35em 0; }
+.vditor-reset blockquote blockquote { border-left-color: var(--ink-border); }
+
+.vditor-reset ul, .vditor-reset ol { padding-left: 1.6em; margin: 0.7em 0; }
+.vditor-reset li { margin: 0.25em 0; }
+.vditor-reset li::marker { color: var(--ink-text-3); }
+.vditor-reset li > ul, .vditor-reset li > ol { margin: 0.15em 0; }
+.vditor-reset li.task-list-item { list-style: none; margin-left: -1.4em; }
+.vditor-reset .vditor-task { accent-color: var(--ink-accent); margin-right: 0.5em; }
+
+.vditor-reset pre {
+  margin: 1em 0;
+  border-radius: 10px;
+  background: #15171c;
+  border: 1px solid var(--ink-border);
+  overflow-x: auto;
+}
+.vditor-reset pre > code {
+  font-family: var(--ink-mono);
+  font-size: 0.84em;
+  line-height: 1.65;
+  padding: 14px 18px;
+  display: block;
+  background: transparent;
+  color: var(--ink-text);
+}
+.vditor-reset pre code.hljs { background: transparent; padding: 14px 18px; }
+
+.vditor-reset table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: auto;
+  max-width: 100%;
+  font-size: 0.92em;
+  display: block;
+  overflow-x: auto;
+}
+.vditor-reset th, .vditor-reset td {
+  border: 1px solid var(--ink-border);
+  padding: 7px 14px;
+  text-align: left;
+}
+.vditor-reset th { background: var(--ink-quote-bg); font-weight: 600; }
+.vditor-reset tr:nth-child(even) td { background: rgba(235, 230, 215, 0.025); }
+
+.vditor-reset hr {
+  border: none;
+  height: 1px;
+  background: var(--ink-border);
+  margin: 2em auto;
+  width: 100%;
+}
+.vditor-reset img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 0.4em 0;
+}
+.vditor-reset kbd {
+  font-family: var(--ink-mono);
+  font-size: 0.82em;
+  background: #23262e;
+  border: 1px solid var(--ink-border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+
+.vditor-reset .footnotes { font-size: 0.88em; color: var(--ink-text-2); border-top: 1px solid var(--ink-border); margin-top: 2em; padding-top: 1em; }
+.vditor-reset sup a { border-bottom: none; }
+
+.vditor-reset .language-mermaid, .vditor-reset .language-echarts, .vditor-reset .language-mindmap {
+  background: #15171c;
+  border: 1px solid var(--ink-border);
+  border-radius: 10px;
+  padding: 16px;
+  margin: 1em 0;
+  text-align: center;
+}
+
+.vditor-reset [data-type="toc-block"] ul { list-style: none; padding-left: 1em; }
+.vditor-reset [data-type="toc-block"] a { color: var(--ink-text-2); }
+.vditor-reset [data-type="toc-block"] a:hover { color: var(--ink-accent); border-bottom-color: transparent; }

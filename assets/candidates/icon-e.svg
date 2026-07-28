@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- E · 同心色层：紫调三段同心圆 + 白滴 -->
+  <rect x="100" y="100" width="824" height="824" rx="190" fill="#3b0764"/>
+  <circle cx="512" cy="512" r="330" fill="#581c87"/>
+  <circle cx="512" cy="512" r="225" fill="#7e22ce"/>
+  <path d="M512 330 C 456 424, 388 492, 388 572 a124 124 0 0 0 248 0 C 636 492, 568 424, 512 330 Z" fill="#faf5ff"/>
+  <circle cx="640" cy="386" r="26" fill="#faf5ff"/>
+  <path d="M418 668 Q 512 706 606 668" stroke="#faf5ff" stroke-width="22" fill="none" stroke-linecap="round" opacity="0.8"/>
+</svg>

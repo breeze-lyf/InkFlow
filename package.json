@@ -1,0 +1,54 @@
+{
+  "name": "inkflow",
+  "productName": "墨流 InkFlow",
+  "version": "1.0.0",
+  "description": "优雅流畅的桌面 Markdown 编辑器 —— 即时渲染 · 文件库 · 命令面板",
+  "main": "main/main.js",
+  "author": "InkFlow",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "cross-env SMOKE=1 electron . || SMOKE=1 electron .",
+    "pack": "electron-builder --mac --dir",
+    "dist": "electron-builder --mac dmg zip"
+  },
+  "dependencies": {
+    "vditor": "^3.10.8"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.inkflow.markdown",
+    "productName": "墨流",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main/**/*",
+      "renderer/**/*",
+      "samples/**/*",
+      "assets/icon.png",
+      "node_modules/vditor/dist/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "assets/icon.icns",
+      "identity": null,
+      "hardenedRuntime": false,
+      "target": [
+        "dir",
+        "dmg",
+        "zip"
+      ]
+    },
+    "dmg": {
+      "title": "墨流 InkFlow",
+      "window": {
+        "width": 560,
+        "height": 360
+      }
+    }
+  }
+}

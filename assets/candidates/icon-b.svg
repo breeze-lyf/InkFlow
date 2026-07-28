@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- B · 色阶墨滴：三段色带切分，零渐变 -->
+  <defs>
+    <clipPath id="dc">
+      <path d="M512 296 C 446 402, 372 476, 372 564 a140 140 0 0 0 280 0 C 652 476, 578 402, 512 296 Z"/>
+    </clipPath>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="190" fill="#0f1b2a"/>
+  <g clip-path="url(#dc)">
+    <rect x="340" y="268" width="344" height="128" fill="#7dd3fc"/>
+    <rect x="340" y="396" width="344" height="128" fill="#38bdf8"/>
+    <rect x="340" y="524" width="344" height="200" fill="#0369a1"/>
+  </g>
+  <circle cx="664" cy="352" r="32" fill="#7dd3fc"/>
+  <path d="M400 668 Q 512 712 624 668" stroke="#7dd3fc" stroke-width="24" fill="none" stroke-linecap="round" opacity="0.55"/>
+</svg>

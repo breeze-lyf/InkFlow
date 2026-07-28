@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- 深色底：近黑海军蓝对角渐变 -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#12162b"/>
+      <stop offset="0.55" stop-color="#0b0e1c"/>
+      <stop offset="1" stop-color="#070910"/>
+    </linearGradient>
+    <!-- 底部氛围光 -->
+    <radialGradient id="glow" cx="0.5" cy="0.34" r="0.72">
+      <stop offset="0" stop-color="#6366f1" stop-opacity="0.38"/>
+      <stop offset="0.55" stop-color="#22d3ee" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <!-- 墨滴：电光渐变 靛→青 -->
+    <linearGradient id="drop" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#a5b4ff"/>
+      <stop offset="0.45" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <!-- 高光 -->
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <!-- 流线 -->
+    <linearGradient id="wave" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6366f1" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#6366f1" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="squircle">
+      <rect x="100" y="100" width="824" height="824" rx="190"/>
+    </clipPath>
+  </defs>
+
+  <!-- 底盘 -->
+  <rect x="100" y="100" width="824" height="824" rx="190" fill="url(#bg)"/>
+  <g clip-path="url(#squircle)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#glow)"/>
+    <!-- 顶部边缘光 -->
+    <rect x="100" y="100" width="824" height="3" fill="#ffffff" opacity="0.14"/>
+  </g>
+
+  <!-- 墨滴 -->
+  <path d="M512 268 C 440 384, 352 470, 352 566 a160 160 0 0 0 320 0 C 672 470, 584 384, 512 268 Z"
+        fill="url(#drop)"/>
+  <!-- 墨滴高光 -->
+  <ellipse cx="452" cy="448" rx="30" ry="62" fill="url(#gloss)" opacity="0.55" transform="rotate(-16 452 448)"/>
+  <!-- 墨滴底部流光 -->
+  <path d="M392 640 Q 512 690 632 640" stroke="url(#wave)" stroke-width="14" fill="none" stroke-linecap="round" opacity="0.9"/>
+  <!-- 下方第二条细流线（速度感） -->
+  <path d="M428 716 Q 512 752 596 716" stroke="url(#wave)" stroke-width="9" fill="none" stroke-linecap="round" opacity="0.45"/>
+</svg>

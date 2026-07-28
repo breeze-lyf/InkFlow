@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- A · 叠影：两滴半透明交叠 -->
+  <rect x="100" y="100" width="824" height="824" rx="190" fill="#f8f9fb"/>
+  <rect x="100" y="100" width="824" height="824" rx="190" fill="none" stroke="#101014" stroke-opacity="0.06" stroke-width="4"/>
+  <!-- 后层：青滴（右上错位） -->
+  <path d="M572 320 C 508 424, 432 498, 432 586 a140 140 0 0 0 280 0 C 712 498, 636 424, 572 320 Z" fill="#06b6d4" opacity="0.55"/>
+  <!-- 前层：靛滴 -->
+  <path d="M452 320 C 388 424, 312 498, 312 586 a140 140 0 0 0 280 0 C 592 498, 516 424, 452 320 Z" fill="#4f46e5" opacity="0.82"/>
+  <path d="M380 700 Q 512 744 644 700" stroke="#1e293b" stroke-width="24" fill="none" stroke-linecap="round" opacity="0.85"/>
+</svg>

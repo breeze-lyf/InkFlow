@@ -1,0 +1,102 @@
+/* ============ 墨流 InkFlow · 设计令牌 ============ */
+
+:root {
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+  --font-editor: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Source Han Serif SC", serif;
+  --font-mono: "SF Mono", "JetBrains Mono", Menlo, "Sarasa Mono SC", Consolas, monospace;
+  --titlebar-h: 40px;
+  --radius-s: 6px;
+  --radius-m: 9px;
+  --radius-l: 14px;
+  --ease: cubic-bezier(.32,.72,.35,1);
+}
+
+/* ---------- 浅色 · 纸 ---------- */
+body[data-theme="light"] {
+  --bg-app: #f4f2ec;
+  --bg-sidebar: #eceae2;
+  --bg-sidebar-hover: rgba(60, 54, 36, 0.055);
+  --bg-sidebar-active: rgba(76, 95, 213, 0.13);
+  --bg-editor: #faf9f5;
+  --bg-tabbar: #f4f2ec;
+  --bg-tab-active: #faf9f5;
+  --bg-elevated: #ffffff;
+  --bg-input: rgba(60, 54, 36, 0.05);
+  --bg-code: rgba(120, 110, 90, 0.10);
+  --bg-blockquote: rgba(120, 110, 90, 0.07);
+
+  --text-1: #2b2925;
+  --text-2: #6e695e;
+  --text-3: #a39d8e;
+  --text-faint: #c3beb0;
+
+  --border: rgba(60, 54, 36, 0.11);
+  --border-strong: rgba(60, 54, 36, 0.2);
+
+  --accent: #4c5fd5;
+  --accent-strong: #3a4bc0;
+  --accent-soft: rgba(76, 95, 213, 0.12);
+  --accent-text: #ffffff;
+
+  --mark: rgba(255, 212, 0, 0.42);
+  --code-inline: #b3446c;
+  --link: #4c5fd5;
+  --danger: #c0392b;
+
+  --shadow-pop: 0 12px 40px rgba(50, 45, 30, 0.18), 0 2px 8px rgba(50, 45, 30, 0.1);
+  --shadow-card: 0 1px 3px rgba(50, 45, 30, 0.07);
+  --selection: rgba(76, 95, 213, 0.16);
+  --scrollbar: rgba(60, 54, 36, 0.22);
+}
+
+/* ---------- 深色 · 墨 ---------- */
+body[data-theme="dark"] {
+  --bg-app: #17191e;
+  --bg-sidebar: #121419;
+  --bg-sidebar-hover: rgba(235, 230, 215, 0.06);
+  --bg-sidebar-active: rgba(147, 161, 255, 0.16);
+  --bg-editor: #1b1e24;
+  --bg-tabbar: #17191e;
+  --bg-tab-active: #1b1e24;
+  --bg-elevated: #23262e;
+  --bg-input: rgba(235, 230, 215, 0.07);
+  --bg-code: rgba(235, 230, 215, 0.08);
+  --bg-blockquote: rgba(235, 230, 215, 0.05);
+
+  --text-1: #dcd9d0;
+  --text-2: #92908a;
+  --text-3: #63615b;
+  --text-faint: #45443f;
+
+  --border: rgba(235, 230, 215, 0.09);
+  --border-strong: rgba(235, 230, 215, 0.18);
+
+  --accent: #93a1ff;
+  --accent-strong: #aab6ff;
+  --accent-soft: rgba(147, 161, 255, 0.16);
+  --accent-text: #1b1e24;
+
+  --mark: rgba(255, 212, 0, 0.30);
+  --code-inline: #ff8fa8;
+  --link: #93a1ff;
+  --danger: #e5534b;
+
+  --shadow-pop: 0 14px 48px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --selection: rgba(147, 161, 255, 0.22);
+  --scrollbar: rgba(235, 230, 215, 0.2);
+}
+
+/* ---------- 滚动条 ---------- */
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--text-3); border: 2px solid transparent; background-clip: padding-box; }
+*::-webkit-scrollbar-corner { background: transparent; }
+
+::selection { background: var(--selection); }

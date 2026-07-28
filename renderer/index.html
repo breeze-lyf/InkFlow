@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>墨流 InkFlow</title>
+  <link rel="stylesheet" href="../node_modules/vditor/dist/index.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/vditor-custom.css">
+</head>
+<body data-theme="light" data-focus="off">
+  <div id="app">
+    <!-- 侧边栏 -->
+    <aside id="sidebar">
+      <div id="sidebar-head" class="drag-region">
+        <div id="sidebar-seg" class="no-drag">
+          <button class="seg-btn active" data-panel="files" title="文件库">文件</button>
+          <button class="seg-btn" data-panel="outline" title="大纲">大纲</button>
+        </div>
+      </div>
+
+      <div id="panel-files" class="side-panel active">
+        <div id="lib-bar">
+          <span id="lib-name" title="">未打开文件夹</span>
+          <div class="lib-actions">
+            <button class="icon-btn" id="btn-new-file" title="新建文件 (⌘N)">
+              <svg viewBox="0 0 16 16"><path d="M9.5 1.5h-5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-8l-3-3z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M9.3 1.8v3h3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M8 7v4M6 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </button>
+            <button class="icon-btn" id="btn-new-folder" title="新建文件夹">
+              <svg viewBox="0 0 16 16"><path d="M1.5 4a1 1 0 0 1 1-1h3l1.5 2h6.5a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V4z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M8 7.5v4M6 9.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </button>
+            <button class="icon-btn" id="btn-collapse" title="全部折叠">
+              <svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="icon-btn" id="btn-refresh" title="刷新">
+              <svg viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2v3h-3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+        <div id="file-tree"></div>
+        <div id="tree-empty">
+          <p>打开一个文件夹作为文档库</p>
+          <button class="btn" id="btn-open-folder-empty">打开文件夹…</button>
+        </div>
+      </div>
+
+      <div id="panel-outline" class="side-panel">
+        <div id="outline-list"></div>
+        <div id="outline-empty">当前文档没有标题</div>
+      </div>
+    </aside>
+
+    <div id="sidebar-resizer"></div>
+
+    <!-- 主区域 -->
+    <main id="main">
+      <div id="tabbar" class="drag-region">
+        <div id="tabs" class="no-drag"></div>
+      </div>
+
+      <div id="editor-area">
+        <div id="vditor"></div>
+
+        <!-- 欢迎页 -->
+        <div id="welcome">
+          <div id="welcome-inner">
+            <div id="welcome-logo">
+              <img src="../assets/brand-lockup.png" alt="墨流 InkFlow">
+            </div>
+            <p class="welcome-tag">纸上得来终觉浅，落笔此处墨自流</p>
+            <div id="welcome-actions">
+              <button class="btn primary" id="wa-new">新建文件 <kbd>⌘N</kbd></button>
+              <button class="btn" id="wa-open">打开文件… <kbd>⌘O</kbd></button>
+              <button class="btn" id="wa-folder">打开文件夹… <kbd>⇧⌘O</kbd></button>
+            </div>
+            <div id="welcome-recent-wrap">
+              <h3>最近打开</h3>
+              <div id="welcome-recent"></div>
+            </div>
+            <div id="welcome-demo">
+              <a href="#" id="wa-demo">打开功能演示文档 →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="statusbar">
+        <span id="st-path" title=""></span>
+        <span class="st-spacer"></span>
+        <span id="st-save" class="st-item"></span>
+        <span id="st-words" class="st-item"></span>
+        <span id="st-time" class="st-item"></span>
+        <span id="st-mode" class="st-item st-click" title="切换专注模式">专注：关</span>
+        <span id="st-type" class="st-item">Markdown</span>
+      </div>
+    </main>
+  </div>
+
+  <!-- 命令面板 / 快速打开 -->
+  <div id="overlay" class="hidden">
+    <div id="overlay-mask"></div>
+    <div id="overlay-box">
+      <input id="overlay-input" type="text" spellcheck="false" autocomplete="off">
+      <div id="overlay-list"></div>
+      <div id="overlay-foot">
+        <span><kbd>↑↓</kbd> 选择</span><span><kbd>↵</kbd> 执行</span><span><kbd>esc</kbd> 关闭</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 快捷键帮助 -->
+  <div id="modal-shortcuts" class="modal hidden">
+    <div class="modal-mask"></div>
+    <div class="modal-box">
+      <div class="modal-title">键盘快捷键 <span class="modal-close" data-close>×</span></div>
+      <div class="shortcut-grid">
+        <div><kbd>⌘N</kbd> 新建文件</div><div><kbd>⌘O</kbd> 打开文件</div>
+        <div><kbd>⇧⌘O</kbd> 打开文件夹</div><div><kbd>⌘S</kbd> 保存</div>
+        <div><kbd>⇧⌘S</kbd> 另存为</div><div><kbd>⌘W</kbd> 关闭标签页</div>
+        <div><kbd>⌘P</kbd> 快速打开</div><div><kbd>⇧⌘P</kbd> 命令面板</div>
+        <div><kbd>⌘B</kbd> 加粗</div><div><kbd>⌘I</kbd> 斜体</div>
+        <div><kbd>⌘K</kbd> 插入链接</div><div><kbd>⌘E</kbd> 行内代码</div>
+        <div><kbd>⇧⌘X</kbd> 删除线</div><div><kbd>⌥⌘C</kbd> 代码块</div>
+        <div><kbd>⌥⌘I</kbd> 插入图片</div><div><kbd>⌥⌘T</kbd> 插入表格</div>
+        <div><kbd>⇧⌘L</kbd> 侧边栏</div><div><kbd>⇧⌘J</kbd> 大纲</div>
+        <div><kbd>⇧⌘F</kbd> 专注模式</div><div><kbd>⇧⌘T</kbd> 打字机模式</div>
+        <div><kbd>⌘= / ⌘-</kbd> 缩放字号</div><div><kbd>⌘,</kbd> 偏好设置</div>
+        <div><kbd>⌘/</kbd> 本帮助</div><div><kbd>⌥⌘P</kbd> 导出 PDF</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关于 -->
+  <div id="modal-about" class="modal hidden">
+    <div class="modal-mask"></div>
+    <div class="modal-box about-box">
+      <div class="modal-title">关于墨流 <span class="modal-close" data-close>×</span></div>
+      <div class="about-body">
+        <img src="../assets/icon.png" width="64" height="64" style="border-radius: 14px;" alt="墨流">
+        <h2>墨流 InkFlow <span id="about-ver"></span></h2>
+        <p>优雅流畅的桌面 Markdown 编辑器</p>
+        <p class="about-dim">即时渲染 · 文档库 · 命令面板 · 专注写作</p>
+        <p class="about-dim">基于开源项目 <b>Vditor</b>（MIT License）构建</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 退出确认 -->
+  <div id="modal-quit" class="modal hidden">
+    <div class="modal-mask"></div>
+    <div class="modal-box">
+      <div class="modal-title">有未保存的更改</div>
+      <div class="quit-body">
+        <p id="quit-msg"></p>
+        <div class="quit-actions">
+          <button class="btn" id="quit-cancel">取消</button>
+          <button class="btn danger" id="quit-discard">不保存退出</button>
+          <button class="btn primary" id="quit-save">保存并退出</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 树节点右键菜单 -->
+  <div id="ctx-menu" class="hidden"></div>
+
+  <!-- 内联重命名/新建输入 -->
+  <div id="toast"></div>
+
+  <script src="../node_modules/vditor/dist/index.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/panels.js"></script>
+  <script src="js/overlay.js"></script>
+  <script src="js/exporter.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
