@@ -17,6 +17,28 @@ let mainWin = null;
 let assetServer = null;
 let assetUrl = '';
 
+// 文档库目录监听：外部新增/删除/修改文件时通知渲染端无感刷新
+let fsWatcher = null;
+let fsWatchTimer = null;
+function watchFolder(dir) {
+  if (fsWatcher) {
+    try { fsWatcher.close(); } catch { /* 忽略 */ }
+    fsWatcher = null;
+  }
+  if (!dir) return;
+  try {
+    fsWatcher = fs.watch(dir, { recursive: true }, () => {
+      clearTimeout(fsWatchTimer);
+      fsWatchTimer = setTimeout(() => {
+        if (mainWin && !mainWin.isDestroyed()) {
+          mainWin.webContents.send('menu:action', { action: 'tree-fs-changed' });
+        }
+      }, 350);
+    });
+    fsWatcher.on('error', () => {});
+  } catch { /* 目录不可监听时静默降级 */ }
+}
+
 const userData = app.getPath('userData');
 const settings = new Store(path.join(userData, 'settings.json'), {
   theme: 'system',
@@ -162,6 +184,9 @@ function registerIPC() {
   ipcMain.handle('settings:set', (e, patch) => {
     settings.set(patch);
     refreshMenu();
+    if (Object.prototype.hasOwnProperty.call(patch, 'openFolder')) {
+      watchFolder(patch.openFolder);
+    }
     return true;
   });
 
@@ -807,6 +832,38 @@ async function runFuncSmoke() {
   results.push(['tree-collapse', !!(tree.opened && tree.closed && tree.allClosed)]);
   if (!(tree.opened && tree.closed && tree.allClosed)) console.log('[debug] tree:', JSON.stringify(tree));
 
+  // 6.975 选中目录下创建文件：落在 assets/ 内且立即出现在树中（缓存失效，无需手动刷新）
+  const createdFile = path.join(samplesDir, 'assets', '子目录新建.md');
+  const create = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const dirRow = document.querySelector('.tree-row[data-is-dir="1"]');
+    if (!dirRow) return { fail: 'no dir row' };
+    dirRow.click(); await sleep(400);
+    document.querySelector('#btn-new-file').click(); await sleep(400);
+    const input = document.querySelector('.tree-rename-input');
+    if (!input) return { fail: 'no input row' };
+    input.value = '子目录新建.md';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    await sleep(1000);
+    const newPath = ${JSON.stringify(createdFile)};
+    const row = document.querySelector('.tree-row[data-path="' + CSS.escape(newPath) + '"]');
+    return { inTree: !!row };
+  })()`);
+  results.push(['create-under-selection', create.inTree === true && fs.existsSync(createdFile)]);
+  if (create.inTree !== true) console.log('[debug] create:', JSON.stringify(create));
+  await js(`App.closeTabByPath(${JSON.stringify(createdFile)}, true)`);
+  try { fs.unlinkSync(createdFile); } catch {}
+  await wait(1000);
+
+  // 6.976 外部落盘自动出现在树中（fs 监听无感刷新）
+  const extFile = path.join(samplesDir, '外部新增.md');
+  fs.writeFileSync(extFile, '# 外部\n', 'utf-8');
+  await wait(1600);
+  const extVisible = await js(`!!document.querySelector('.tree-row[data-path="' + CSS.escape(${JSON.stringify(extFile)}) + '"]')`);
+  results.push(['fs-watch-visible', extVisible === true]);
+  try { fs.unlinkSync(extFile); } catch {}
+  await wait(1200);
+
   // 6.98 Word 生成管线（主进程直接验证转换器，不弹对话框）
   try {
     const HTMLtoDOCX = require('html-to-docx');
@@ -913,6 +970,7 @@ app.whenReady().then(async () => {
 
   registerIPC();
   createWindow();
+  watchFolder(settings.get('openFolder', ''));
 
   nativeTheme.on('updated', () => {
     if (settings.get('theme') === 'system' && mainWin) {

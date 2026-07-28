@@ -38,10 +38,13 @@ const FileTree = {
   root: null,
   expanded: new Set(),
   cache: new Map(),
+  selected: null,   // 当前选中的条目路径（新建文件/文件夹落在它下面）
+  _editing: false,  // 行内命名/重命名进行中（此时外部刷新让路）
 
   async setRoot(dir) {
     this.root = dir;
     this.expanded = new Set([dir]);
+    this.selected = dir;
     this.cache.clear();
     await this.render();
     $('#lib-name').textContent = dir ? P.basename(dir) : '未打开文件夹';
@@ -65,6 +68,19 @@ const FileTree = {
     await this._renderDir(this.root, frag, 0);
     box.appendChild(frag);
     this.markActive();
+    this.markSelected();
+  },
+
+  markSelected() {
+    $$('.tree-row.selected').forEach((r) => r.classList.remove('selected'));
+    if (!this.selected) return;
+    const row = $(`.tree-row[data-path="${CSS.escape(this.selected)}"]`);
+    if (row) row.classList.add('selected');
+  },
+
+  select(path) {
+    this.selected = path;
+    this.markSelected();
   },
 
   async _renderDir(dir, parentEl, depth) {
@@ -90,10 +106,13 @@ const FileTree = {
 
       row.onclick = (e) => {
         e.stopPropagation();
+        this.select(entry.path);
         // 双击文件夹时浏览器会派发两次 click：第二次起忽略，避免"展开又收起=没反应"
         if (entry.isDir) {
           if (e.detail > 1) return;
           this.toggleDir(node, entry, depth);
+        } else if (entry.isImage) {
+          App.insertImagePath(entry.path);
         } else {
           App.openFile(entry.path);
         }
@@ -146,17 +165,30 @@ const FileTree = {
   },
 
   _targetDir(entry) {
-    if (!entry) return this.root;
-    if (entry.isDir) return entry.path;
-    return P.dirname(entry.path);
+    // 优先右键目标；否则跟随当前选中项：选中目录→其内，选中文件→其父目录，兜底根目录
+    if (entry) return entry.isDir ? entry.path : P.dirname(entry.path);
+    const base = this.selected || this.root;
+    if (!base || base === this.root) return this.root;
+    const row = $(`.tree-row[data-path="${CSS.escape(base)}"]`);
+    if (row && row.dataset.isDir === '1') return base;
+    return P.dirname(base);
   },
 
   async _inlineCreate(entry, isDir) {
     const parent = this._targetDir(entry);
+    if (!parent) { toast('请先打开文件夹'); return; }
     if (!this.expanded.has(parent)) this.expanded.add(parent);
     await this.render();
     // 在目标目录行后插入输入行
+    // 输入行插入到目标目录的子容器内（就地展开，所见即所得）
     const parentRow = $(`.tree-row[data-path="${CSS.escape(parent)}"]`);
+    const parentNode = parentRow && parentRow.parentElement;
+    let kids = parentNode && $('.tree-children', parentNode);
+    if (parentNode && !kids) {
+      kids = el('div', 'tree-children');
+      parentNode.appendChild(kids);
+      parentNode.classList.add('open');
+    }
     const node = el('div', 'tree-node');
     const row = el('div', 'tree-row');
     const depth = parentRow ? parseInt(parentRow.style.paddingLeft) / 14 + 1 : 0;
@@ -166,27 +198,28 @@ const FileTree = {
     input.spellcheck = false;
     row.appendChild(input);
     node.appendChild(row);
-    if (parentRow && parentRow.parentElement.nextSibling) {
-      parentRow.parentElement.parentElement.insertBefore(node, parentRow.parentElement.nextSibling);
-    } else {
-      $('#file-tree').prepend(node);
-    }
+    if (kids) kids.prepend(node);
+    else $('#file-tree').prepend(node);
     input.focus();
     input.select();
     const done = async (commit) => {
       const name = input.value.trim();
       node.remove();
-      if (!commit || !name) return;
+      if (!commit || !name) { this._editing = false; return; }
       const finalName = isDir || P.extname(name) ? name : name + '.md';
       const r = await ink.create(parent, finalName, isDir);
       if (r.ok) {
+        // 关键：让父目录缓存失效，否则 render 用旧数据（表现为"创建了却看不到"）
+        this.cache.delete(parent);
         this.expanded.add(parent);
         await this.render();
+        this.select(r.path);
         if (!isDir) App.openFile(r.path);
         toast(isDir ? '文件夹已创建' : '文件已创建');
       } else {
         toast(r.error || '创建失败');
       }
+      this._editing = false;
     };
     input.onkeydown = (e) => {
       if (e.key === 'Enter') done(true);
@@ -194,6 +227,7 @@ const FileTree = {
       e.stopPropagation();
     };
     input.onblur = () => done(true);
+    this._editing = true;
   },
 
   _inlineRename(row, entry) {
@@ -210,11 +244,14 @@ const FileTree = {
     input.setSelectionRange(0, stem.length);
     const done = async (commit) => {
       const name = input.value.trim();
+      this._editing = false;
       if (!commit || !name || name === oldName) { await this.render(); return; }
       const to = P.join(P.dirname(entry.path), name);
       const r = await ink.rename(entry.path, to);
+      this.cache.delete(P.dirname(entry.path));
       if (r.ok) {
         App.onPathRenamed(entry.path, to);
+        this.selected = to;
         await this.render();
         toast('已重命名');
       } else {
@@ -228,6 +265,7 @@ const FileTree = {
       e.stopPropagation();
     };
     input.onblur = () => done(true);
+    this._editing = true;
   },
 
   async _delete(entry) {
@@ -267,6 +305,13 @@ const FileTree = {
   },
 
   async refresh() {
+    this.cache.clear();
+    await this.render();
+  },
+
+  // 文件系统外部变化触发的无感刷新（行内编辑期间让路，不打断输入）
+  async softRefresh() {
+    if (this._editing || !this.root) return;
     this.cache.clear();
     await this.render();
   },

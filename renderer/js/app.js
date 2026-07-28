@@ -417,6 +417,22 @@ const App = {
     }
   },
 
+  // 从文件树插入图片：文档目录内直接用相对路径，外部图片复制进 assets/
+  async insertImagePath(p) {
+    const tab = this.activeTab();
+    if (!tab || !tab.path) { toast('请先保存文件，再插入图片'); return; }
+    const dir = P.dirname(tab.path);
+    let rel;
+    if (p.startsWith(dir + '/')) {
+      rel = p.slice(dir.length + 1);
+    } else {
+      const r = await ink.copyImage(p, dir);
+      if (!r.ok) { toast('图片复制失败'); return; }
+      rel = r.relPath;
+    }
+    Editor.insert(`![${P.stem(p)}](${rel.split('/').map(encodeURIComponent).join('/')})\n`);
+  },
+
   switchPanel(name) {
     $$('.seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.panel === name));
     $('#panel-files').classList.toggle('active', name === 'files');
@@ -694,6 +710,7 @@ const App = {
         case 'open-settings': Overlay.open('palette'); break;
         case 'about': $('#modal-about').classList.remove('hidden'); break;
         case 'recent-changed': this._renderWelcome(); break;
+        case 'tree-fs-changed': FileTree.softRefresh(); break;
         case 'try-quit': this._tryQuit(); break;
       }
     });
