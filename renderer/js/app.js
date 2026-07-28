@@ -23,6 +23,7 @@ const App = {
     Overlay.init();
     this._applyThemeSetting(this.settings.theme || 'system');
     this._applyFontSize(this.settings.fontSize || 16);
+    this._applyPageWidth(this.settings.pageWidth || 'normal');
     document.body.dataset.sidebar = this.settings.sidebarVisible === false ? 'hidden' : 'visible';
     document.body.dataset.focus = this.settings.focusMode ? 'on' : 'off';
     document.body.dataset.toolbar = this.settings.showToolbar ? 'show' : 'hide';
@@ -287,6 +288,7 @@ const App = {
     $('#btn-refresh').onclick = () => FileTree.refresh();
     $('#btn-collapse').onclick = () => FileTree.collapseAll();
     $('#btn-open-folder-empty').onclick = () => this.openFolderDialog();
+    $('#btn-sidebar-toggle').onclick = () => this.toggleSidebar();
 
     // 欢迎页
     $('#wa-new').onclick = () => this.newUntitled();
@@ -458,6 +460,18 @@ const App = {
     this.setSetting({ fontSize: size });
   },
 
+  /* ================= 页面宽度 ================= */
+  _applyPageWidth(mode) {
+    document.documentElement.style.setProperty('--page-width', mode === 'wide' ? '1120px' : '780px');
+    this.settings.pageWidth = mode;
+  },
+
+  setPageWidth(mode) {
+    this._applyPageWidth(mode);
+    this.setSetting({ pageWidth: mode });
+    toast(mode === 'wide' ? '已切换为超宽页面' : '已切换为正常页面');
+  },
+
   /* ================= 状态渲染 ================= */
   _renderTabs() {
     const box = $('#tabs');
@@ -567,6 +581,8 @@ const App = {
       { icon: 'cmd', title: '外观：浅色', run: () => this.setTheme('light') },
       { icon: 'cmd', title: '外观：深色', run: () => this.setTheme('dark') },
       { icon: 'cmd', title: '外观：跟随系统', run: () => this.setTheme('system') },
+      { icon: 'cmd', title: '页面宽度：正常', run: () => this.setPageWidth('normal') },
+      { icon: 'cmd', title: '页面宽度：超宽', run: () => this.setPageWidth('wide') },
       { icon: 'cmd', title: '放大字号', kbd: '⌘=', run: () => this.zoom(1) },
       { icon: 'cmd', title: '缩小字号', kbd: '⌘-', run: () => this.zoom(-1) },
       { icon: 'cmd', title: '重置字号', kbd: '⌘0', run: () => this.zoom(0) },
@@ -626,6 +642,7 @@ const App = {
         case 'toggle-focus': this.toggleFocus(payload); break;
         case 'toggle-typewriter': this.toggleTypewriter(payload); break;
         case 'set-theme': this.setTheme(payload); break;
+        case 'set-page-width': this.setPageWidth(payload); break;
         case 'system-theme-changed': this.systemThemeChanged(); break;
         case 'zoom': this.zoom(payload); break;
         case 'show-shortcuts': $('#modal-shortcuts').classList.remove('hidden'); break;

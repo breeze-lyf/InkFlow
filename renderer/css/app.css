@@ -214,6 +214,26 @@ body[data-theme="dark"] .outline-item.active { color: var(--accent); }
   align-items: stretch;
   overflow: hidden;
 }
+/* 侧栏折叠时，红绿灯移到标签栏左侧，需让位 */
+body[data-sidebar="hidden"] #tabbar { padding-left: 84px; }
+
+#btn-sidebar-toggle {
+  width: 30px;
+  margin: 7px 2px 7px 8px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .13s var(--ease);
+}
+#btn-sidebar-toggle svg { width: 16px; height: 16px; }
+#btn-sidebar-toggle:hover { background: var(--bg-sidebar-hover); color: var(--text-1); }
+body[data-sidebar="hidden"] #btn-sidebar-toggle { margin-left: 2px; }
 
 #tabs {
   display: flex;

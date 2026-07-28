@@ -109,6 +109,13 @@ function buildMenu(win, ctx) {
         { type: 'separator' },
         { label: '专注模式', accelerator: 'CmdOrCtrl+Shift+F', type: 'checkbox', checked: ctx.getSetting('focusMode', false), click: (item) => send(win, 'toggle-focus', item.checked) },
         { label: '打字机模式', accelerator: 'CmdOrCtrl+Shift+T', type: 'checkbox', checked: ctx.getSetting('typewriter', true), click: (item) => send(win, 'toggle-typewriter', item.checked) },
+        {
+          label: '页面宽度',
+          submenu: [
+            { label: '正常', type: 'radio', checked: ctx.getSetting('pageWidth', 'normal') === 'normal', click: () => send(win, 'set-page-width', 'normal') },
+            { label: '超宽', type: 'radio', checked: ctx.getSetting('pageWidth', 'normal') === 'wide', click: () => send(win, 'set-page-width', 'wide') },
+          ],
+        },
         { type: 'separator' },
         { label: '外观：浅色', click: () => send(win, 'set-theme', 'light') },
         { label: '外观：深色', click: () => send(win, 'set-theme', 'dark') },

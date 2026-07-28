@@ -550,6 +550,10 @@ async function runSmoke() {
       mainWin.webContents.send('menu:action', { action: 'quick-open' });
     } else if (shot === 'outline') {
       mainWin.webContents.send('menu:action', { action: 'toggle-outline' });
+    } else if (shot === 'wide') {
+      mainWin.webContents.send('menu:action', { action: 'set-page-width', payload: 'wide' });
+    } else if (shot === 'sidebar-off') {
+      mainWin.webContents.send('menu:action', { action: 'toggle-sidebar' });
     } else if (shot.startsWith('scroll-')) {
       const y = parseInt(shot.split('-')[1], 10) || 0;
       await mainWin.webContents.executeJavaScript(`
@@ -642,6 +646,31 @@ async function runFuncSmoke() {
     return pre && ir && ir.clientHeight ? pre.clientHeight / ir.clientHeight : 0;
   })()`);
   results.push(['editor-full-height', hRatio > 0.85]);
+
+  // 6.9 页面宽度切换：超宽时文本列变宽（padding 减小），滚动容器保持全宽
+  const pw = await js(`(() => {
+    const pre = document.querySelector('.vditor-ir > .vditor-reset');
+    const ir = document.querySelector('.vditor-ir');
+    const before = { preW: pre.clientWidth, pad: parseInt(getComputedStyle(pre).paddingLeft) };
+    App.setPageWidth('wide');
+    const mid = parseInt(getComputedStyle(pre).paddingLeft);
+    App.setPageWidth('normal');
+    const after = parseInt(getComputedStyle(pre).paddingLeft);
+    // 滚动容器应基本全宽（允许自身滚动条占位 ~16px）
+    return { fullBleed: before.preW >= ir.clientWidth - 20, mid, after, before: before.pad };
+  })()`);
+  results.push(['page-width', pw.fullBleed && pw.mid < pw.after && pw.after === pw.before]);
+
+  // 6.95 侧栏折叠与恢复
+  const sb = await js(`(() => {
+    const before = document.body.dataset.sidebar;
+    App.toggleSidebar();
+    const hidden = document.body.dataset.sidebar;
+    App.toggleSidebar();
+    const back = document.body.dataset.sidebar;
+    return { before, hidden, back };
+  })()`);
+  results.push(['sidebar-toggle', sb.hidden === 'hidden' && sb.back === sb.before]);
 
   // 7. 主题切换不报错
   await js(`App.setTheme('dark')`);

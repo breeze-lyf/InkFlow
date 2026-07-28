@@ -62,16 +62,17 @@ body[data-toolbar="show"] #vditor .vditor-toolbar { display: flex; }
   line-height: 1.8;
   caret-color: var(--accent);
   /* 注意：绝不能加大底部 padding —— 会挤占内层 PRE 滚动容器的高度 */
-  padding: 0 24px !important;
+  padding: 0 !important;
 }
-/* 内容列居中；底部留白由 vditor 打字机 :after spacer 提供 */
+/* 内容宽度由 --page-width 控制：滚动容器全宽（滚动条贴窗口右缘），
+   文本列通过自适应 padding 居中；底部留白由 vditor 打字机 :after spacer 提供 */
 #vditor .vditor-ir > .vditor-reset,
 #vditor .vditor-wysiwyg > .vditor-reset {
-  max-width: 780px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding-top: 36px !important;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
+  padding-left: max(28px, calc((100% - var(--page-width, 780px)) / 2)) !important;
+  padding-right: max(28px, calc((100% - var(--page-width, 780px)) / 2)) !important;
 }
 #vditor .vditor-ir::selection,
 #vditor .vditor-ir ::selection { background: var(--selection); }
