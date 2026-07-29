@@ -571,20 +571,24 @@ ${(cssLinks || []).map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
 </head><body class="vditor-reset">${html}</body></html>`;
     fs.writeFileSync(tmpHtml, doc, 'utf-8');
 
+    // 2x 高清长图：窗口宽度 = 栏宽(820) × 缩放(2)，布局视口保持 820 CSS px，
+    // 位图宽度达 1640px（原 900 窗口 + zoom 2 会把视口压到 450，等于变相 1x 输出）
+    const SCALE = 2;
+    const COL = 820;
     let shotWin = new BrowserWindow({
       show: false,
-      width: 900,
+      width: COL * SCALE,
       height: 1200,
       webPreferences: { sandbox: true, contextIsolation: true },
     });
     try {
       await shotWin.loadFile(tmpHtml);
-      await shotWin.webContents.setZoomFactor(2); // 2x 输出更清晰
+      await shotWin.webContents.setZoomFactor(SCALE);
       await new Promise((r) => setTimeout(r, 1100));
       const h = await shotWin.webContents.executeJavaScript(
-        'Math.min((document.body.scrollHeight || 800) + 20, 7000)'
+        'Math.min((document.body.scrollHeight || 800) + 20, 14000)'
       );
-      shotWin.setContentSize(900, Math.max(480, Math.ceil(h)));
+      shotWin.setContentSize(COL * SCALE, Math.max(480, Math.ceil(h)));
       await new Promise((r) => setTimeout(r, 500));
       const img = await shotWin.webContents.capturePage();
       fs.writeFileSync(savePath, img.toPNG());
@@ -1116,15 +1120,17 @@ async function runFuncSmoke() {
   const pngPath = path.join(tmpDir, '导出测试.png');
   process.env.INKFLOW_TEST_SAVEPATH = pngPath;
   const pngR = await js(`ink.exportImage({ html: '<h1>墨流</h1><p>导出管线</p>', cssLinks: [], suggestedName: 'x.png' })`);
-  let pngOk = false;
+  let pngOk = false, pngW = 0;
   try {
-    const head = Buffer.alloc(8);
+    const head = Buffer.alloc(24);
     const fd = fs.openSync(pngPath, 'r');
-    fs.readSync(fd, head, 0, 8, 0);
+    fs.readSync(fd, head, 0, 24, 0);
     fs.closeSync(fd);
     pngOk = head[0] === 0x89 && head[1] === 0x50;
+    pngW = head.readUInt32BE(16); // IHDR 宽度
   } catch {}
-  results.push(['export-image-gen', pngR.ok === true && pngOk]);
+  results.push(['export-image-gen', pngR.ok === true && pngOk && pngW >= 1600]);
+  if (!(pngW >= 1600)) console.log('[debug] png-width:', pngW);
   delete process.env.INKFLOW_TEST_SAVEPATH;
 
   // 6.997 环境控制条与设置面板
