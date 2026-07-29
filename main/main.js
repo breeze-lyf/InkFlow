@@ -57,6 +57,7 @@ const recentStore = new Store(path.join(userData, 'recent.json'), { files: [], f
 
 const MD_EXTS = ['.md', '.markdown', '.mdown', '.mdtxt', '.text', '.txt'];
 const IMG_EXTS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'];
+const PREVIEW_EXTS = ['.pdf'];
 
 function addRecent(p, type) {
   if (!p) return;
@@ -263,8 +264,9 @@ function registerIPC() {
     }
   });
 
-  ipcMain.handle('fs:read-dir', (e, dir) => {
+  ipcMain.handle('fs:read-dir', (e, dir, opts) => {
     try {
+      const sortMode = (opts && opts.sort) || 'name';
       const names = fs.readdirSync(dir);
       const entries = [];
       for (const name of names) {
@@ -277,17 +279,23 @@ function registerIPC() {
           continue;
         }
         if (st.isDirectory()) {
-          entries.push({ name, path: full, isDir: true });
+          entries.push({ name, path: full, isDir: true, mtime: st.mtimeMs });
         } else {
           const ext = path.extname(name).toLowerCase();
-          if (MD_EXTS.includes(ext) || IMG_EXTS.includes(ext)) {
-            entries.push({ name, path: full, isDir: false, isImage: IMG_EXTS.includes(ext), mtime: st.mtimeMs, size: st.size });
+          if (MD_EXTS.includes(ext) || IMG_EXTS.includes(ext) || PREVIEW_EXTS.includes(ext)) {
+            entries.push({
+              name, path: full, isDir: false,
+              isImage: IMG_EXTS.includes(ext),
+              isPreview: PREVIEW_EXTS.includes(ext),
+              mtime: st.mtimeMs, size: st.size,
+            });
           }
         }
       }
       entries.sort((a, b) => {
         if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
-        return a.name.localeCompare(b.name, 'zh-Hans-CN');
+        if (sortMode === 'mtime') return (b.mtime || 0) - (a.mtime || 0);
+        return a.name.localeCompare(b.name, 'zh-Hans-CN', { numeric: true });
       });
       return { ok: true, entries };
     } catch (err) {
@@ -911,8 +919,8 @@ async function runFuncSmoke() {
   try { fs.unlinkSync(extFile); } catch {}
   await wait(1200);
 
-  // 6.977 图片行点击：单击插入一份，双击也只多一份（防双发）
-  const imgInsert = await js(`(async () => {
+  // 6.977 图片行点击：不得向文档插入任何内容（新语义=右侧只读预览）
+  const imgClick = await js(`(async () => {
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     await App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}));
     await sleep(400);
@@ -923,17 +931,14 @@ async function runFuncSmoke() {
     const imgRow = document.querySelector('.tree-row[data-path$=".png"], .tree-row[data-path$=".jpg"]');
     if (!imgRow) return { fail: 'no img row' };
     imgRow.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
-    await sleep(500);
-    const afterOne = (Editor.getValue().match(/!\\[/g) || []).length;
-    imgRow.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
-    imgRow.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 }));
-    imgRow.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-    await sleep(500);
-    const afterTwo = (Editor.getValue().match(/!\\[/g) || []).length;
-    return { afterOne, afterTwo };
+    await sleep(600);
+    const noInsert = !Editor.getValue().includes('![');
+    const previewOpened = App.activeTab() && App.activeTab().kind === 'preview';
+    App.closeTab(App.active, true);
+    await sleep(400);
+    return { noInsert, previewOpened };
   })()`);
-  results.push(['img-insert-once', imgInsert.afterOne === 1 && imgInsert.afterTwo === 2]);
-  if (imgInsert.afterOne !== 1 || imgInsert.afterTwo !== 2) console.log('[debug] img-insert:', JSON.stringify(imgInsert));
+  results.push(['img-click-no-insert', imgClick.noInsert === true && imgClick.previewOpened === true]);
 
   // 6.978 相对路径图片：应全部被改写为资源服务地址并成功加载
   const imgOk = await js(`(async () => {
@@ -983,6 +988,66 @@ async function runFuncSmoke() {
   await wait(700);
   await js(`App.closeTabByPath(${JSON.stringify(movedSrc)}, true)`);
   try { fs.unlinkSync(movedSrc); } catch {}
+  await wait(900);
+
+  // 6.9787 图片点击 = 只读预览页签（文档内容不得被插入）
+  const pv = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    await App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}));
+    await sleep(400);
+    const before = Editor.getValue();
+    const imgRow = document.querySelector('.tree-row[data-path$=".png"]');
+    imgRow.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    await sleep(700);
+    const tab = App.activeTab();
+    const isPreview = tab && tab.kind === 'preview';
+    const paneVisible = !document.querySelector('#preview-pane').classList.contains('hidden');
+    const hasImg = !!document.querySelector('#preview-pane img');
+    App.closeTab(App.active, true);
+    await sleep(400);
+    // 关闭预览后落点可能是其他标签，必须显式回到测试文档再取值
+    await App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}));
+    await sleep(400);
+    const after = Editor.getValue();
+    // 核心：不得插入图片语法；尾换行被 vditor 归一化（±1 字符）属正常
+    const noImgInsert = !after.includes('![');
+    const lenOk = Math.abs(after.length - before.length) <= 1;
+    return { isPreview, paneVisible, hasImg, noImgInsert, lenOk };
+  })()`);
+  results.push(['preview-tab', pv.isPreview === true && pv.paneVisible === true && pv.hasImg === true && pv.noImgInsert === true && pv.lenOk === true]);
+  if (!(pv.noImgInsert && pv.lenOk)) console.log('[debug] preview-tab:', JSON.stringify(pv));
+
+  // 6.9788 折叠按钮双态：全折叠后显示"全部展开"，展开后显示"全部折叠"
+  const ce = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    FileTree.collapseAll();
+    await sleep(400);
+    const t1 = document.querySelector('#btn-collapse').title;
+    FileTree.expandAll();
+    await sleep(1300);
+    const t2 = document.querySelector('#btn-collapse').title;
+    const openCount = [...FileTree.expanded].filter(p => p !== FileTree.root).length;
+    return { t1, t2, openCount };
+  })()`);
+  results.push(['collapse-expand', ce.t1 === '全部展开' && ce.t2 === '全部折叠' && ce.openCount >= 1]);
+
+  // 6.9789 排序切换：按修改时间排序时最新文件排最前
+  const newest = path.join(samplesDir, '最新文件.md');
+  fs.writeFileSync(newest, '# 最新\n', 'utf-8');
+  await wait(1400);
+  const sm = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    FileTree._setSortMode('mtime');
+    await sleep(900);
+    const rows = [...document.querySelectorAll('#file-tree .tree-row')]
+      .filter(r => r.dataset.isDir !== '1' && r.closest('.tree-children') === null);
+    const first = rows.length ? rows[0].dataset.path : '';
+    FileTree._setSortMode('name');
+    await sleep(700);
+    return { first };
+  })()`);
+  results.push(['sort-mtime', sm.first === newest]);
+  try { fs.unlinkSync(newest); } catch {}
   await wait(900);
 
   // 6.979 markmap 离线渲染（懒加载本地引擎，应出现 svg 导图）

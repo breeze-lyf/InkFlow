@@ -126,10 +126,59 @@ const App = {
     setTimeout(() => Editor.focus(), 60);
   },
 
+  // 预览非 Markdown 文件（图片/PDF 等）：只读页签，不创建编辑器实例
+  openPreview(p) {
+    const existing = this.tabs.findIndex((t) => t.path === p && t.kind === 'preview');
+    if (existing >= 0) { this.activate(existing); return; }
+    this.tabs.push({
+      key: 'preview:' + p,
+      path: p,
+      name: P.basename(p),
+      kind: 'preview',
+      dirty: false,
+      savedValue: '',
+      cachedValue: '',
+    });
+    this.activate(this.tabs.length - 1);
+  },
+
+  _showPreview(tab) {
+    const pane = $('#preview-pane');
+    const ext = P.extname(tab.path).toLowerCase();
+    const url = `${this.assetUrl}/img?path=${encodeURIComponent(tab.path)}`;
+    if (['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'].includes(ext)) {
+      pane.innerHTML = `<img src="${url}" alt="${tab.name}">`;
+    } else if (ext === '.pdf') {
+      pane.innerHTML = `<iframe src="${url}" title="${tab.name}"></iframe>`;
+    } else {
+      pane.innerHTML = `<div class="preview-unsupported">暂不支持预览该格式</div>`;
+    }
+    pane.classList.remove('hidden');
+  },
+
+  _hidePreview() {
+    const pane = $('#preview-pane');
+    pane.classList.add('hidden');
+    pane.innerHTML = '';
+  },
+
   async activate(i) {
     if (i < 0 || i >= this.tabs.length) return;
     this.active = i;
     const tab = this.activeTab();
+    if (tab.kind === 'preview') {
+      Editor.clearActive();
+      this._showPreview(tab);
+      this._renderTabs();
+      this._syncWelcome();
+      this.updateStatus();
+      Outline.render();
+      FileTree.markActive(tab.path);
+      ink.setWindowFile(tab.path, false);
+      this._persistSession();
+      return;
+    }
+    this._hidePreview();
     // 实例池：切换只显隐，不重渲染；首次激活懒创建
     await Editor.activate(tab.key, tab);
     const cur = Editor.getValue(tab.key);
@@ -621,25 +670,27 @@ const App = {
 
   updateStatus(saved) {
     const tab = this.activeTab();
+    const isPreview = tab && tab.kind === 'preview';
     $('#st-path').textContent = tab ? (tab.path || '未保存') : '';
     $('#st-path').title = tab ? (tab.path || '') : '';
     const save = $('#st-save');
     if (tab) {
-      if (tab.dirty) { save.textContent = '● 未保存'; save.className = 'st-item dirty'; }
+      if (isPreview) { save.textContent = '只读预览'; save.className = 'st-item'; }
+      else if (tab.dirty) { save.textContent = '● 未保存'; save.className = 'st-item dirty'; }
       else if (saved) { save.textContent = '✓ 已保存'; save.className = 'st-item saved'; }
       else { save.textContent = tab.path ? '已保存' : ''; save.className = 'st-item' + (tab.path ? ' saved' : ''); }
     } else save.textContent = '';
 
-    const s = Editor.ready && tab ? Editor.stats() : { words: 0, minutes: 0 };
-    $('#st-words').textContent = tab ? `${formatNumber(s.words)} 字` : '';
-    $('#st-time').textContent = tab && s.words > 0 ? `约 ${s.minutes} 分钟` : '';
+    const s = Editor.ready && tab && !isPreview ? Editor.stats() : { words: 0, minutes: 0 };
+    $('#st-words').textContent = tab && !isPreview ? `${formatNumber(s.words)} 字` : '';
+    $('#st-time').textContent = tab && !isPreview && s.words > 0 ? `约 ${s.minutes} 分钟` : '';
     $('#st-mode').textContent = document.body.dataset.focus === 'on' ? '专注：开' : '专注：关';
   },
 
   _syncWelcome() {
     const show = this.tabs.length === 0;
     $('#welcome').classList.toggle('show', show);
-    if (show) this._renderRecent();
+    if (show) { this._renderRecent(); this._hidePreview(); }
   },
 
   async _renderRecent() {
@@ -822,10 +873,12 @@ const App = {
   },
 
   _persistSession() {
+    const active = this.activeTab();
     this.setSetting({
       openFolder: this.folder || '',
-      openTabs: this.tabs.filter((t) => t.path).map((t) => t.path),
-      activeTab: (this.activeTab() && this.activeTab().path) || '',
+      // 预览页签是临时视图，不进会话
+      openTabs: this.tabs.filter((t) => t.path && t.kind !== 'preview').map((t) => t.path),
+      activeTab: (active && active.kind !== 'preview' && active.path) || '',
     });
   },
 

@@ -384,6 +384,24 @@ body[data-sidebar="hidden"] #btn-sidebar-toggle { margin-left: 2px; }
 .editor-host { height: 100%; }
 .editor-host.hidden { display: none; }
 
+/* ---- 文件预览层（图片/PDF 只读页签） ---- */
+#preview-pane {
+  position: absolute; inset: 0;
+  background: var(--bg-editor);
+  display: flex; align-items: center; justify-content: center;
+  overflow: auto;
+  padding: 32px;
+  z-index: 5;
+}
+#preview-pane.hidden { display: none; }
+#preview-pane img {
+  max-width: 92%; max-height: 92%;
+  border-radius: var(--radius-m);
+  box-shadow: 0 4px 24px rgba(60, 50, 30, .12);
+}
+#preview-pane iframe { width: 100%; height: 100%; border: none; border-radius: var(--radius-m); }
+#preview-pane .preview-unsupported { color: var(--text-3); font-size: 14px; }
+
 /* ============ 欢迎页 ============ */
 #welcome {
   position: absolute;

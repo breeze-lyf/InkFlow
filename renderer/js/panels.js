@@ -53,7 +53,7 @@ const FileTree = {
 
   async loadDir(dir) {
     if (this.cache.has(dir)) return this.cache.get(dir);
-    const r = await ink.readDir(dir);
+    const r = await ink.readDir(dir, { sort: App.settings.fileSortMode || 'name' });
     const entries = r.ok ? r.entries : [];
     this.cache.set(dir, entries);
     return entries;
@@ -64,9 +64,14 @@ const FileTree = {
     box.innerHTML = '';
     $('#tree-empty').classList.toggle('show', !this.root);
     if (!this.root) return;
-    // 空白区域作为"移到根目录"的投放点（只绑一次）
+    // 空白区域作为"移到根目录"的投放点 + 右键菜单（只绑一次）
     if (!box._dropBound) {
       box._dropBound = true;
+      box.oncontextmenu = (e) => {
+        if (e.target.closest('.tree-row')) return; // 行上的右键走行菜单
+        e.preventDefault();
+        this._blankCtxMenu(e.clientX, e.clientY);
+      };
       box.ondragover = (e) => {
         if (!e.dataTransfer.types.includes('text/inkflow-path')) return;
         e.preventDefault();
@@ -86,6 +91,7 @@ const FileTree = {
     box.appendChild(frag);
     this.markActive();
     this.markSelected();
+    this._syncCollapseIcon();
   },
 
   // 把文件/文件夹移动到目标目录（拖拽移动的核心）
@@ -175,8 +181,9 @@ const FileTree = {
         if (entry.isDir) {
           if (e.detail > 1) return;
           this.toggleDir(node, entry, depth);
-        } else if (entry.isImage) {
-          if (e.detail === 1) App.insertImagePath(entry.path);
+        } else if (entry.isImage || entry.isPreview) {
+          // 图片/PDF 等：右侧只读页签预览（不再自动插入到文档）
+          if (e.detail === 1) App.openPreview(entry.path);
         } else {
           App.openFile(entry.path);
         }
@@ -214,6 +221,7 @@ const FileTree = {
       node.appendChild(children);
       await this._renderDir(entry.path, children, depth + 1);
     }
+    this._syncCollapseIcon();
   },
 
   _ctxMenu(x, y, entry) {
@@ -227,6 +235,26 @@ const FileTree = {
       { label: entry.isDir ? '删除文件夹' : '删除文件', danger: true, action: () => this._delete(entry) },
     ];
     CtxMenu.show(x, y, items);
+  },
+
+  // 空白区域右键：新建 + 排序方式
+  _blankCtxMenu(x, y) {
+    const mode = App.settings.fileSortMode || 'name';
+    CtxMenu.show(x, y, [
+      { label: '新建文件', action: () => this._inlineCreate(null, false) },
+      { label: '新建文件夹', action: () => this._inlineCreate(null, true) },
+      '-',
+      { label: (mode === 'name' ? '✓ ' : '　') + '按名称排序', action: () => this._setSortMode('name') },
+      { label: (mode === 'mtime' ? '✓ ' : '　') + '按修改时间排序', action: () => this._setSortMode('mtime') },
+    ]);
+  },
+
+  _setSortMode(mode) {
+    App.settings.fileSortMode = mode;
+    App.setSetting({ fileSortMode: mode });
+    this.cache.clear();
+    this.render();
+    toast(mode === 'mtime' ? '已按修改时间排序' : '已按名称排序');
   },
 
   _targetDir(entry) {
@@ -384,6 +412,29 @@ const FileTree = {
   collapseAll() {
     this.expanded = new Set(this.root ? [this.root] : []);
     this.render();
+  },
+
+  // 全部展开（渐进加载，大库也不至于一次打满）
+  async expandAll() {
+    if (!this.root) return;
+    const walk = async (dir) => {
+      this.expanded.add(dir);
+      const entries = this.cache.get(dir) || await this.loadDir(dir);
+      for (const e of entries) {
+        if (e.isDir) await walk(e.path);
+      }
+    };
+    await walk(this.root);
+    await this.render();
+  },
+
+  // 折叠/展开按钮双态图标同步
+  _syncCollapseIcon() {
+    const btn = $('#btn-collapse');
+    if (!btn) return;
+    const hasOpen = [...this.expanded].some((p) => p !== this.root);
+    btn.innerHTML = hasOpen ? ICONS.collapseAll : ICONS.expandAll;
+    btn.title = hasOpen ? '全部折叠' : '全部展开';
   },
 };
 

@@ -26,7 +26,7 @@ contextBridge.exposeInMainWorld('ink', {
   // 文件
   readFile: (p) => ipcRenderer.invoke('fs:read-file', p),
   writeFile: (p, content) => ipcRenderer.invoke('fs:write-file', { path: p, content }),
-  readDir: (p) => ipcRenderer.invoke('fs:read-dir', p),
+  readDir: (p, opts) => ipcRenderer.invoke('fs:read-dir', p, opts),
   create: (parent, name, isDir) => ipcRenderer.invoke('fs:create', { parent, name, isDir }),
   rename: (from, to) => ipcRenderer.invoke('fs:rename', { from, to }),
   trash: (p) => ipcRenderer.invoke('fs:delete', p),
