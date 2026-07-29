@@ -282,23 +282,56 @@ const Editor = {
   async _handleUpload(inst, files) {
     const tab = inst.tab;
     if (!tab || !tab.path) {
-      toast('请先保存文件，再插入图片');
+      toast('请先保存文件，再粘贴内容');
       return null;
     }
     const dir = P.dirname(tab.path);
+    const TEXT_EXTS = ['.md', '.markdown', '.mdown', '.txt'];
     for (const file of files) {
+      const name = file.name || 'pasted.png';
+      const ext = P.extname(name).toLowerCase();
       try {
-        const buf = await file.arrayBuffer();
-        const r = await ink.saveImageBytes(new Uint8Array(buf), file.name || 'pasted.png', dir);
-        if (r.ok) {
-          const rel = r.relPath.split('/').map(encodeURIComponent).join('/');
-          inst.vditor.insertValue(`![${P.stem(file.name || 'image')}](${rel})\n`, true);
-          toast('图片已保存到 assets/');
+        if (TEXT_EXTS.includes(ext)) {
+          // 文本类文件：直接插入内容（不再被当成图片）
+          let content = '';
+          const fp = typeof ink.getFilePath === 'function' ? ink.getFilePath(file) : '';
+          if (fp) {
+            const r = await ink.readFile(fp);
+            if (r.ok) content = r.content;
+          }
+          if (!content) content = await file.text();
+          if (content.trim()) {
+            inst.vditor.insertValue(content + '\n', true);
+            toast('已插入文件内容');
+          } else {
+            toast('文件内容为空');
+          }
+        } else if (/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(name) || !ext) {
+          // 图片（或剪贴板无名截图）：落盘 assets/ 并插入相对路径
+          const buf = await file.arrayBuffer();
+          const r = await ink.saveImageBytes(new Uint8Array(buf), name, dir);
+          if (r.ok) {
+            const rel = r.relPath.split('/').map(encodeURIComponent).join('/');
+            inst.vditor.insertValue(`![${P.stem(name)}](${rel})\n`, true);
+            toast('图片已保存到 assets/');
+          } else {
+            toast('图片保存失败：' + r.error);
+          }
         } else {
-          toast('图片保存失败：' + r.error);
+          // 其他文件：复制进 assets/ 并插入链接
+          const fp = typeof ink.getFilePath === 'function' ? ink.getFilePath(file) : '';
+          if (!fp) { toast('该文件类型暂不支持粘贴'); continue; }
+          const r = await ink.copyImage(fp, dir);
+          if (r.ok) {
+            const rel = r.relPath.split('/').map(encodeURIComponent).join('/');
+            inst.vditor.insertValue(`[${name}](${rel})\n`, true);
+            toast('文件已存入 assets/ 并插入链接');
+          } else {
+            toast('文件复制失败：' + r.error);
+          }
         }
       } catch (e) {
-        toast('图片处理失败');
+        toast('粘贴内容处理失败');
       }
     }
     return null;

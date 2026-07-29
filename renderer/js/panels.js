@@ -64,11 +64,49 @@ const FileTree = {
     box.innerHTML = '';
     $('#tree-empty').classList.toggle('show', !this.root);
     if (!this.root) return;
+    // 空白区域作为"移到根目录"的投放点（只绑一次）
+    if (!box._dropBound) {
+      box._dropBound = true;
+      box.ondragover = (e) => {
+        if (!e.dataTransfer.types.includes('text/inkflow-path')) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        box.classList.add('drop-root');
+      };
+      box.ondragleave = (e) => { if (e.target === box) box.classList.remove('drop-root'); };
+      box.ondrop = (e) => {
+        e.preventDefault();
+        box.classList.remove('drop-root');
+        const src = e.dataTransfer.getData('text/inkflow-path');
+        if (src && this.root) this._moveTo(src, this.root);
+      };
+    }
     const frag = document.createDocumentFragment();
     await this._renderDir(this.root, frag, 0);
     box.appendChild(frag);
     this.markActive();
     this.markSelected();
+  },
+
+  // 把文件/文件夹移动到目标目录（拖拽移动的核心）
+  async _moveTo(src, destDir) {
+    if (!src || !destDir || src === destDir) return;
+    if (P.dirname(src) === destDir) return; // 已在该目录
+    if (destDir === src || destDir.startsWith(src + '/')) { toast('不能移动到自身内部'); return; }
+    const dest = P.join(destDir, P.basename(src));
+    const r = await ink.rename(src, dest);
+    if (!r.ok) { toast(r.error || '移动失败'); return; }
+    this.cache.delete(P.dirname(src));
+    this.cache.delete(destDir);
+    this.expanded.add(destDir);
+    App.onPathRenamed(src, dest);
+    this.selected = dest;
+    await this.render();
+    const row = $(`.tree-row[data-path="${CSS.escape(dest)}"]`);
+    if (row) row.scrollIntoView({ block: 'nearest' });
+    const isDir = $(`.tree-row[data-path="${CSS.escape(dest)}"]`)?.dataset.isDir === '1';
+    if (!isDir) App.openFile(dest);
+    toast('已移动');
   },
 
   markSelected() {
@@ -103,6 +141,31 @@ const FileTree = {
       row.appendChild(label);
       node.appendChild(row);
       parentEl.appendChild(node);
+
+      // 拖拽移动：拖到文件夹上 = 移入该目录
+      row.draggable = true;
+      row.ondragstart = (e) => {
+        e.stopPropagation();
+        e.dataTransfer.setData('text/inkflow-path', entry.path);
+        e.dataTransfer.effectAllowed = 'move';
+      };
+      if (entry.isDir) {
+        row.ondragover = (e) => {
+          if (!e.dataTransfer.types.includes('text/inkflow-path')) return;
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = 'move';
+          row.classList.add('drop-target');
+        };
+        row.ondragleave = () => row.classList.remove('drop-target');
+        row.ondrop = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          row.classList.remove('drop-target');
+          const src = e.dataTransfer.getData('text/inkflow-path');
+          if (src) this._moveTo(src, entry.path);
+        };
+      }
 
       row.onclick = (e) => {
         e.stopPropagation();

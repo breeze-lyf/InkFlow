@@ -948,6 +948,43 @@ async function runFuncSmoke() {
   results.push(['img-render', imgOk.total > 0 && imgOk.fixed === imgOk.total && imgOk.loaded === imgOk.total]);
   if (!(imgOk.total > 0 && imgOk.loaded === imgOk.total)) console.log('[debug] img-render:', JSON.stringify(imgOk));
 
+  // 6.9785 粘贴 .md 文件：应插入文本内容而非按图片处理
+  const pasteMd = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    await App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}));
+    await sleep(400);
+    Editor.setValue('');
+    await sleep(300);
+    const inst = Editor.instances.get(Editor.activeKey);
+    const f = new File(['# 粘贴的标题\\n\\n粘贴内容段落。'], '外部笔记.md', { type: 'text/markdown' });
+    await Editor._handleUpload(inst, [f]);
+    await sleep(400);
+    const v = Editor.getValue();
+    return { hasHeading: v.includes('# 粘贴的标题'), noImage: !v.includes('![') };
+  })()`);
+  results.push(['paste-md-content', pasteMd.hasHeading === true && pasteMd.noImage === true]);
+  if (pasteMd.hasHeading !== true) console.log('[debug] paste-md:', JSON.stringify(pasteMd));
+
+  // 6.9786 文件树拖拽移动：文件移入子目录后再移回清理
+  const movedSrc = path.join(samplesDir, '移动测试.md');
+  fs.writeFileSync(movedSrc, '# 移动\n', 'utf-8');
+  await wait(1400); // 等 fs 监听上树
+  const movedDest = path.join(samplesDir, 'assets', '移动测试.md');
+  const mv = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    await FileTree._moveTo(${JSON.stringify(movedSrc)}, ${JSON.stringify(path.join(samplesDir, 'assets'))});
+    await sleep(800);
+    const row = document.querySelector('.tree-row[data-path="' + CSS.escape(${JSON.stringify(movedDest)}) + '"]');
+    return { inTree: !!row };
+  })()`);
+  const mvOk = !fs.existsSync(movedSrc) && fs.existsSync(movedDest);
+  results.push(['tree-move', mv.inTree === true && mvOk]);
+  await js(`FileTree._moveTo(${JSON.stringify(movedDest)}, ${JSON.stringify(samplesDir)})`);
+  await wait(700);
+  await js(`App.closeTabByPath(${JSON.stringify(movedSrc)}, true)`);
+  try { fs.unlinkSync(movedSrc); } catch {}
+  await wait(900);
+
   // 6.979 markmap 离线渲染（懒加载本地引擎，应出现 svg 导图）
   await js(`App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}))`);
   await wait(500);
