@@ -14,6 +14,9 @@ const App = {
   /* ================= 启动 ================= */
   async boot() {
     const info = await ink.info();
+    this.platform = info.platform;
+    this.isMac = info.platform === 'darwin';
+    document.body.dataset.platform = info.platform;
     this.assetUrl = info.assetUrl;
     this.samplesDir = info.samplesDir;
     this.settings = await ink.getSettings();
@@ -39,8 +42,19 @@ const App = {
     // 恢复上次会话
     await this._restoreSession();
 
+    this._localizeKbds();
     this._renderWelcome();
     ink.ready();
+  },
+
+  // Windows/Linux：静态界面里的 ⌘⌥⇧ 符号替换为 Ctrl/Alt/Shift 文字
+  _localizeKbds() {
+    if (this.isMac) return;
+    $$('kbd').forEach((k) => { k.textContent = fmtKbd(k.textContent, false); });
+    $$('[title]').forEach((n) => {
+      const t = n.getAttribute('title');
+      if (t && /[⌘⌥⇧]/.test(t)) n.setAttribute('title', fmtKbd(t, false));
+    });
   },
 
   async _restoreSession() {

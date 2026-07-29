@@ -382,11 +382,14 @@ const Editor = {
     pre.focus();
 
     if (level >= 1 && level <= 6) {
+      // vditor 热键判定按平台区分修饰键（mac: metaKey，其他: ctrlKey）
+      const isMac = !App.platform || App.platform === 'darwin';
       pre.dispatchEvent(new KeyboardEvent('keydown', {
         key: String(level),
         code: 'Digit' + level,
         altKey: true,
-        metaKey: true,
+        metaKey: isMac,
+        ctrlKey: !isMac,
         bubbles: true,
         cancelable: true,
       }));

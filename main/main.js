@@ -82,10 +82,20 @@ function refreshMenu() {
   });
 }
 
+// 跨平台文档目录：Windows → 文档，Linux → XDG documents（可能回退 home）
+function docsDir() {
+  try {
+    return app.getPath('documents');
+  } catch {
+    return os.homedir();
+  }
+}
+
 // ---------- 窗口 ----------
 function createWindow() {
   const themeMode = settings.get('theme', 'system');
   const dark = themeMode === 'dark' || (themeMode === 'system' && nativeTheme.shouldUseDarkColors);
+  const isMac = process.platform === 'darwin';
 
   mainWin = new BrowserWindow({
     width: isSmoke ? 1440 : 1240,
@@ -93,8 +103,10 @@ function createWindow() {
     minWidth: 880,
     minHeight: 560,
     title: '墨流 InkFlow',
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 16, y: 14 }, // 40px 页栏内垂直居中（按钮高 12px → (40-12)/2）
+    // 仅 macOS 使用隐藏式标题栏（红绿灯）；Windows/Linux 用原生标题栏 + 系统菜单
+    ...(isMac
+      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 14 } }
+      : {}),
     backgroundColor: dark ? '#14161a' : '#f7f5f0',
     show: false,
     webPreferences: {
@@ -141,8 +153,8 @@ function registerIPC() {
     sep: path.sep,
     home: os.homedir(),
     samplesDir: (() => {
-      const docsDir = path.join(os.homedir(), 'Documents', '墨流示例');
-      return fs.existsSync(docsDir) ? docsDir : path.join(__dirname, '..', 'samples');
+      const dir = path.join(docsDir(), '墨流示例');
+      return fs.existsSync(dir) ? dir : path.join(__dirname, '..', 'samples');
     })(),
   }));
 
@@ -153,7 +165,7 @@ function registerIPC() {
     settings.set('firstRunDone', true);
     try {
       const srcDir = path.join(__dirname, '..', 'samples');
-      const destDir = path.join(os.homedir(), 'Documents', '墨流示例');
+      const destDir = path.join(docsDir(), '墨流示例');
       if (!fs.existsSync(destDir)) {
         fs.mkdirSync(destDir, { recursive: true });
         for (const name of fs.readdirSync(srcDir)) {
@@ -405,8 +417,14 @@ function registerIPC() {
   // ---- 窗口状态 ----
   ipcMain.on('win:set-file', (e, { path: p, edited }) => {
     if (!mainWin) return;
-    mainWin.setRepresentedFilename(p || '');
-    mainWin.setDocumentEdited(!!edited);
+    if (process.platform === 'darwin') {
+      mainWin.setRepresentedFilename(p || '');
+      mainWin.setDocumentEdited(!!edited);
+    } else {
+      // Windows/Linux：原生标题栏显示当前文件名与编辑状态
+      const name = p ? path.basename(p) : '未命名';
+      mainWin.setTitle(`${name}${edited ? ' •' : ''} — 墨流 InkFlow`);
+    }
   });
 
   ipcMain.on('win:confirm-close', () => {

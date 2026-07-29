@@ -20,7 +20,7 @@ const Overlay = {
     const input = $('#overlay-input');
     overlay.classList.remove('hidden');
     input.value = '';
-    input.placeholder = mode === 'palette' ? '输入命令…' : (App.folder ? '输入文件名快速跳转…' : '尚未打开文件夹（⌘⇧O）');
+    input.placeholder = mode === 'palette' ? '输入命令…' : (App.folder ? '输入文件名快速跳转…' : fmtKbd('尚未打开文件夹（⌘⇧O）', App.isMac));
 
     if (mode === 'quick') {
       this._fileCache = App.folder ? await ink.walkMd(App.folder) : [];
@@ -97,7 +97,7 @@ const Overlay = {
       row.appendChild(main);
       if (it.kbd) {
         const k = el('span', 'ov-kbd');
-        k.innerHTML = `<kbd>${it.kbd}</kbd>`;
+        k.innerHTML = `<kbd>${fmtKbd(it.kbd, App.isMac)}</kbd>`;
         row.appendChild(k);
       }
       row.onclick = () => this._run(i);

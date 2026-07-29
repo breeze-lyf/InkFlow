@@ -75,6 +75,15 @@ function buildMenu(win, ctx) {
         { label: '导出为 HTML…', click: () => send(win, 'export-html') },
         { type: 'separator' },
         { label: '关闭标签页', accelerator: 'CmdOrCtrl+W', click: () => send(win, 'close-tab') },
+        // Windows/Linux：macOS 应用菜单里的设置/退出入口移到文件菜单
+        ...(isMac
+          ? []
+          : [
+              { type: 'separator' },
+              { label: '设置…', accelerator: 'CmdOrCtrl+,', click: () => send(win, 'open-settings') },
+              { type: 'separator' },
+              { role: 'quit', label: '退出' },
+            ]),
       ],
     },
     {
@@ -148,7 +157,8 @@ function buildMenu(win, ctx) {
       label: '窗口',
       submenu: [
         { role: 'minimize', label: '最小化' },
-        { role: 'zoom', label: '缩放' },
+        // zoom role 仅 macOS 有效（绿灯缩放）
+        ...(isMac ? [{ role: 'zoom', label: '缩放' }] : []),
         { type: 'separator' },
         { role: 'close', label: '关闭窗口' },
       ],
@@ -160,6 +170,8 @@ function buildMenu(win, ctx) {
         { label: '功能演示文档', click: () => send(win, 'open-demo') },
         { type: 'separator' },
         { label: 'Vditor 项目主页', click: () => shell.openExternal('https://github.com/Vanessa219/vditor') },
+        // Windows/Linux：macOS 应用菜单里的关于入口移到帮助菜单
+        ...(isMac ? [] : [{ type: 'separator' }, { label: '关于墨流', click: () => send(win, 'about') }]),
       ],
     },
   ];

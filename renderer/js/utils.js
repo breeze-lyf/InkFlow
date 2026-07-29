@@ -29,12 +29,18 @@ function throttle(fn, ms) {
   };
 }
 
-// 路径工具（POSIX 风格处理，mac 上够用）
+// 路径工具：跨平台，统一按正斜杠处理（Windows 的 Node/Electron API 均接受 /）
 const P = {
-  basename(p) { return p.split('/').pop() || p; },
+  // 归一化为正斜杠（Windows 下主进程返回 \ 分隔的路径）
+  normalize(p) { return p ? p.replace(/\\/g, '/') : p; },
+  basename(p) { return P.normalize(p).split('/').pop() || p; },
   dirname(p) {
-    const i = p.lastIndexOf('/');
-    return i <= 0 ? '/' : p.slice(0, i);
+    const n = P.normalize(p);
+    const i = n.lastIndexOf('/');
+    if (i < 0) return n;
+    if (i === 0) return '/';
+    // 保留 Windows 盘符根（C:/ 的目录是 C:/ 本身）
+    return n.slice(0, i) || '/';
   },
   extname(p) {
     const b = P.basename(p);
@@ -42,23 +48,31 @@ const P = {
     return i > 0 ? b.slice(i) : '';
   },
   join(...parts) {
-    return parts.join('/').replace(/\/{2,}/g, '/');
+    return P.normalize(parts.join('/')).replace(/([^:])\/+/g, '$1/');
   },
   stem(p) {
     const b = P.basename(p);
     const i = b.lastIndexOf('.');
     return i > 0 ? b.slice(0, i) : b;
   },
+  // 判断绝对路径：POSIX /x、Windows C:/x 或 C:\x
+  isAbsolute(p) {
+    return /^([a-zA-Z]:[\\/]|\/)/.test(p);
+  },
   // 解析相对路径（相对 baseDir），处理 ./ ../
   resolve(baseDir, rel) {
-    if (rel.startsWith('/')) return rel;
-    const stack = baseDir.split('/').filter(Boolean);
-    for (const seg of rel.split('/')) {
+    const nrel = P.normalize(rel);
+    if (P.isAbsolute(nrel)) return nrel;
+    const nbase = P.normalize(baseDir);
+    const m = nbase.match(/^([a-zA-Z]:)?\//);
+    const prefix = m && m[1] ? m[1] : '';
+    const stack = nbase.replace(/^[a-zA-Z]:\//, '/').split('/').filter(Boolean);
+    for (const seg of nrel.split('/')) {
       if (seg === '' || seg === '.') continue;
       if (seg === '..') stack.pop();
       else stack.push(seg);
     }
-    return '/' + stack.join('/');
+    return prefix + '/' + stack.join('/');
   },
 };
 
@@ -132,6 +146,18 @@ function countWords(md) {
 
 function formatNumber(n) {
   return n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(n);
+}
+
+// 快捷键符号本地化：mac 用 ⌘⌥⇧，Windows/Linux 转为 Ctrl/Alt/Shift（修饰键按惯例重排）
+function fmtKbd(s, isMac) {
+  if (isMac || !s) return s;
+  return s.replace(/[⌘⌥⇧]+/g, (mods) => {
+    const parts = [];
+    if (mods.includes('⌘')) parts.push('Ctrl');
+    if (mods.includes('⌥')) parts.push('Alt');
+    if (mods.includes('⇧')) parts.push('Shift');
+    return parts.join('+') + '+';
+  });
 }
 
 function toast(msg, ms = 2200) {

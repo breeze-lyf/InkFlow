@@ -39,9 +39,11 @@ body[data-sidebar="hidden"] #sidebar-resizer { display: none; }
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding-left: 84px; /* 红绿灯占位 */
+  padding-left: 12px;
   padding-right: 10px;
 }
+/* 仅 macOS 隐藏式标题栏需为红绿灯让位 */
+body[data-platform="darwin"] #sidebar-head { padding-left: 84px; }
 
 #sidebar-seg {
   display: flex;
@@ -283,8 +285,8 @@ body[data-theme="dark"] .outline-item.active { color: var(--accent); }
   align-items: stretch;
   overflow: hidden;
 }
-/* 侧栏折叠时，红绿灯移到标签栏左侧，需让位 */
-body[data-sidebar="hidden"] #tabbar { padding-left: 84px; }
+/* 侧栏折叠时，macOS 红绿灯移到标签栏左侧，需让位 */
+body[data-platform="darwin"][data-sidebar="hidden"] #tabbar { padding-left: 84px; }
 
 #btn-sidebar-toggle {
   width: 30px;
