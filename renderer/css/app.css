@@ -477,16 +477,18 @@ body[data-sidebar="hidden"] #btn-sidebar-toggle { margin-left: 2px; }
 }
 .btn:hover { border-color: var(--accent); color: var(--accent-strong); }
 body[data-theme="dark"] .btn:hover { color: var(--accent); }
+/* 主按钮不做大蓝底：细 accent 描边保持层级，底色与次按钮一致 */
 .btn.primary {
-  background: var(--accent);
+  background: var(--bg-elevated);
   border-color: var(--accent);
-  color: var(--accent-text);
-  font-weight: 600;
+  color: var(--text-1);
+  font-weight: 500;
 }
-.btn.primary:hover { background: var(--accent-strong); color: var(--accent-text); }
+.btn.primary:hover { background: var(--accent-soft); border-color: var(--accent-strong); }
+.btn.primary kbd { border-color: var(--border-strong); }
 .btn.danger { color: var(--danger); }
 .btn.danger:hover { border-color: var(--danger); color: var(--danger); }
-.btn kbd { opacity: .65; }
+.btn kbd { color: var(--text-2); }
 
 kbd {
   font-family: var(--font-ui);

@@ -35,6 +35,7 @@
       "renderer/**/*",
       "samples/**/*",
       "assets/icon.png",
+      "assets/brand-lockup.png",
       "node_modules/@oozcitak/dom/**",
       "node_modules/@oozcitak/infra/**",
       "node_modules/@oozcitak/infra/node_modules/@oozcitak/util/**",
