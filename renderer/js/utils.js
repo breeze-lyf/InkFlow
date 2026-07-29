@@ -178,4 +178,6 @@ const ICONS = {
   search: '<svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
   cmd: '<svg viewBox="0 0 16 16" fill="none"><path d="M4.5 4.5h7v7h-7z" stroke="currentColor" stroke-width="1.2"/><path d="M2 2h3M2 14h3M11 2h3M11 14h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
   clock: '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 4.5V8l2.5 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
+  collapseAll: '<svg viewBox="0 0 16 16" fill="none"><path d="M3.5 4.5L8 9l4.5-4.5M3.5 9.5L8 14l4.5-4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  expandAll: '<svg viewBox="0 0 16 16" fill="none"><path d="M3.5 6.5L8 2l4.5 4.5M3.5 11.5L8 7l4.5 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };

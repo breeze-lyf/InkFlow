@@ -882,7 +882,7 @@ async function runFuncSmoke() {
     document.querySelector('#btn-collapse').click(); await sleep(500);
     // render() 会整体重建节点，必须重新查询（旧引用已脱离 DOM）
     const allClosed = document.querySelectorAll('.tree-node.open').length === 0;
-    return { opened, closed, allClosed };
+    return { opened, closed, allClosed, expanded: [...FileTree.expanded], openRows: document.querySelectorAll('.tree-node.open').length, btnTitle: document.querySelector('#btn-collapse').title };
   })()`);
   results.push(['tree-collapse', !!(tree.opened && tree.closed && tree.allClosed)]);
   if (!(tree.opened && tree.closed && tree.allClosed)) console.log('[debug] tree:', JSON.stringify(tree));

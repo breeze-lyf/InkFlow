@@ -414,6 +414,13 @@ const FileTree = {
     this.render();
   },
 
+  // 折叠/展开双态切换（按钮行为随当前状态取反）
+  async toggleCollapse() {
+    const hasOpen = [...this.expanded].some((p) => p !== this.root);
+    if (hasOpen) this.collapseAll();
+    else await this.expandAll();
+  },
+
   // 全部展开（渐进加载，大库也不至于一次打满）
   async expandAll() {
     if (!this.root) return;

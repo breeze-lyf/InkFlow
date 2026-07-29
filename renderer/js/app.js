@@ -381,7 +381,7 @@ const App = {
     $('#btn-new-file').onclick = () => FileTree._inlineCreate(null, false);
     $('#btn-new-folder').onclick = () => FileTree._inlineCreate(null, true);
     $('#btn-refresh').onclick = () => FileTree.refresh();
-    $('#btn-collapse').onclick = () => FileTree.collapseAll();
+    $('#btn-collapse').onclick = () => FileTree.toggleCollapse();
     $('#btn-open-folder-empty').onclick = () => this.openFolderDialog();
     $('#btn-sidebar-toggle').onclick = () => this.toggleSidebar();
     this._bindSettings();

@@ -16,7 +16,7 @@ body[data-theme="light"] {
   --bg-app: #f4f2ec;
   --bg-sidebar: #eceae2;
   --bg-sidebar-hover: rgba(60, 54, 36, 0.055);
-  --bg-sidebar-active: rgba(76, 95, 213, 0.13);
+  --bg-sidebar-active: rgba(60, 54, 36, 0.085);
   --bg-editor: #faf9f5;
   --bg-tabbar: #f4f2ec;
   --bg-tab-active: #faf9f5;
@@ -54,7 +54,7 @@ body[data-theme="dark"] {
   --bg-app: #17191e;
   --bg-sidebar: #121419;
   --bg-sidebar-hover: rgba(235, 230, 215, 0.06);
-  --bg-sidebar-active: rgba(147, 161, 255, 0.16);
+  --bg-sidebar-active: rgba(235, 230, 215, 0.1);
   --bg-editor: #1b1e24;
   --bg-tabbar: #17191e;
   --bg-tab-active: #1b1e24;
