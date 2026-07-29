@@ -47,6 +47,7 @@ const Editor = {
     if (!inst) inst = await this._create(key, tab);
     inst.tab = tab;
     inst.host.classList.remove('hidden');
+    this._hideImgToolbar();
     const sc = this._scroller(inst.host);
     if (sc) sc.scrollTop = tab.scrollTop || 0;
     this._rescanImages(inst); // 切回时复扫图片：加载失败的自愈
@@ -59,6 +60,7 @@ const Editor = {
     const prev = this._active();
     if (prev) prev.host.classList.add('hidden');
     this.activeKey = null;
+    this._hideImgToolbar();
   },
 
   destroy(key) {
@@ -173,6 +175,8 @@ const Editor = {
         inst.ready = true;
         this._setupImgObserver(inst);
         this._bindHostClicks(inst);
+        const sc = this._scroller(inst.host);
+        if (sc) sc.addEventListener('scroll', () => this._hideImgToolbar(), { passive: true });
         Outline.bindScroll(inst.host);
         if (inst.tab.cachedValue) inst.vditor.setValue(inst.tab.cachedValue, true);
         onReady(inst);
@@ -240,6 +244,14 @@ const Editor = {
   // 链接 / TOC 点击拦截（每个实例宿主各自绑定）
   _bindHostClicks(inst) {
     inst.host.addEventListener('click', (e) => {
+      // 点击图片 → 弹出操作条（删除/预览），不再只能靠退格键
+      if (e.target.tagName === 'IMG' && inst.host.contains(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+        this._showImgToolbar(inst, e.target);
+        return;
+      }
+      this._hideImgToolbar();
       const tocSpan = e.target.closest('[data-target-id]');
       if (tocSpan) {
         e.preventDefault();
@@ -259,6 +271,67 @@ const Editor = {
       e.stopPropagation();
       App.handleLinkClick(a);
     }, true);
+  },
+
+  /* ---- 图片操作条 ---- */
+  _bindImgToolbarOnce() {
+    const tb = $('#img-toolbar');
+    if (!tb || tb._bound) return;
+    tb._bound = true;
+    tb.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn || !tb._ctx) return;
+      const { inst, img } = tb._ctx;
+      const act = btn.dataset.act;
+      if (act === 'close') { this._hideImgToolbar(); return; }
+      if (act === 'preview') {
+        const rel = img.dataset.inkFixed || img.getAttribute('src') || '';
+        const tab = inst.tab;
+        if (tab && tab.path && !rel.startsWith('http')) {
+          let relPath = rel;
+          try { relPath = decodeURIComponent(rel); } catch { /* 容错 */ }
+          App.openPreview(P.resolve(P.dirname(tab.path), relPath));
+        }
+        this._hideImgToolbar();
+        return;
+      }
+      if (act === 'del') {
+        // 移除整张图片的 IR 节点，并触发同步保存
+        const node = img.closest('span[data-type="img"]') || img.closest('.vditor-ir__node') || img;
+        node.remove();
+        this._hideImgToolbar();
+        const ir = $('.vditor-ir', inst.host);
+        if (ir) ir.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        App.onEditorInput(inst.key);
+        this.focus();
+      }
+    });
+    // Esc 关闭
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this._hideImgToolbar();
+    });
+  },
+
+  _showImgToolbar(inst, img) {
+    const tb = $('#img-toolbar');
+    const area = $('#editor-area');
+    if (!tb || !area) return;
+    this._bindImgToolbarOnce();
+    tb.classList.remove('hidden');
+    const a = area.getBoundingClientRect();
+    const r = img.getBoundingClientRect();
+    let x = r.left - a.left + r.width / 2 - tb.offsetWidth / 2;
+    x = Math.max(8, Math.min(x, a.width - tb.offsetWidth - 8));
+    let y = r.top - a.top - tb.offsetHeight - 8;
+    if (y < 8) y = r.bottom - a.top + 8; // 顶部没地方就放图下
+    tb.style.left = x + 'px';
+    tb.style.top = y + 'px';
+    tb._ctx = { inst, img };
+  },
+
+  _hideImgToolbar() {
+    const tb = $('#img-toolbar');
+    if (tb) { tb.classList.add('hidden'); tb._ctx = null; }
   },
 
   _setupFocusTracking() {

@@ -402,6 +402,33 @@ body[data-sidebar="hidden"] #btn-sidebar-toggle { margin-left: 2px; }
 #preview-pane iframe { width: 100%; height: 100%; border: none; border-radius: var(--radius-m); }
 #preview-pane .preview-unsupported { color: var(--text-3); font-size: 14px; }
 
+/* ---- 图片操作条 ---- */
+#img-toolbar {
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  box-shadow: var(--shadow-pop);
+  border: 1px solid var(--border);
+}
+#img-toolbar.hidden { display: none; }
+#img-toolbar button {
+  border: none; background: transparent;
+  color: var(--text-1);
+  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .12s var(--ease);
+}
+#img-toolbar button:hover { background: var(--bg-sidebar-hover); }
+#img-toolbar button.danger { color: var(--danger); }
+
 /* ============ 欢迎页 ============ */
 #welcome {
   position: absolute;

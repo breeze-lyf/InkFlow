@@ -1050,6 +1050,28 @@ async function runFuncSmoke() {
   try { fs.unlinkSync(newest); } catch {}
   await wait(900);
 
+  // 6.97810 图片操作条：点击弹出，删除移除整段图片且不伤正文
+  const imgDel = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    await App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}));
+    await sleep(400);
+    Editor.setValue('前文段落\\n\\n![x](assets/none.png)\\n\\n后文段落');
+    await sleep(900);
+    const img = document.querySelector('.editor-host:not(.hidden) img');
+    if (!img) return { fail: 'no img rendered' };
+    img.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    await sleep(300);
+    const tb = document.querySelector('#img-toolbar');
+    const visible = tb && !tb.classList.contains('hidden');
+    tb.querySelector('[data-act="del"]').click();
+    await sleep(500);
+    const v = Editor.getValue();
+    const hidden = tb.classList.contains('hidden');
+    return { visible, removed: !v.includes('!['), kept: v.includes('前文段落') && v.includes('后文段落'), hidden };
+  })()`);
+  results.push(['img-toolbar-delete', imgDel.visible === true && imgDel.removed === true && imgDel.kept === true]);
+  if (!(imgDel.visible && imgDel.removed)) console.log('[debug] img-toolbar:', JSON.stringify(imgDel));
+
   // 6.979 markmap 离线渲染（懒加载本地引擎，应出现 svg 导图）
   await js(`App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}))`);
   await wait(500);
