@@ -2,9 +2,9 @@
 
 <img src="assets/brand-banner.jpg" width="760" alt="墨流 InkFlow">
 
-为 Mac 写作而生的 Markdown 编辑器 —— Typora 式即时渲染 × 现代工作流
+为写作而生的 Markdown 编辑器 —— Typora 式即时渲染 × 现代工作流
 
-macOS · Electron 33 · Vditor IR · MIT License
+macOS · Windows · Linux · Electron 33 · Vditor IR · MIT License
 
 </div>
 
@@ -65,6 +65,8 @@ Typora 把即时渲染做到了极致，但文件管理、标签页、命令面�
 
 ## 快捷键
 
+> 下表为 macOS 符号；Windows / Linux 上 `⌘`→`Ctrl`、`⌥`→`Alt`、`⇧`→`Shift`，应用内提示会按平台自动显示。
+
 | 功能 | 快捷键 | 功能 | 快捷键 |
 | --- | --- | --- | --- |
 | 标题 1~6 级 | `⌘1`~`⌘6` | 正文（取消标题） | `⌘0` |
@@ -77,9 +79,23 @@ Typora 把即时渲染做到了极致，但文件管理、标签页、命令面�
 
 ## 下载与安装
 
-1. 从 Releases 下载 `墨流-x.y.z-arm64.dmg`（Apple Silicon），拖入 Applications
-2. 首次启动自动在 `~/Documents/墨流示例` 创建示例库，30 秒看完全部能力
-3. 当前为个人构建、未公证签名：如提示"已损坏"，执行 `xattr -dr com.apple.quarantine /Applications/墨流.app` 即可
+从 [Releases](https://github.com/breeze-lyf/InkFlow/releases) 下载对应平台的安装包：
+
+| 平台 | 文件 | 说明 |
+| --- | --- | --- |
+| **macOS** (Apple Silicon) | `InkFlow-x.y.z-arm64.dmg` | 拖入 Applications 即可 |
+| **Windows** (Intel/AMD) | `InkFlow-Setup-x.y.z-x64.exe` | 安装程序，推荐大多数用户 |
+| **Windows** (ARM64) | `InkFlow-Setup-x.y.z-arm64.exe` | Surface Pro X 等 ARM 设备 |
+| **Linux** (x64) | `InkFlow-x.y.z.AppImage` | 免安装，`chmod +x` 后直接运行 |
+| **Linux** (ARM64) | `InkFlow-x.y.z-arm64.AppImage` | ARM 设备 |
+
+各平台另有 `.zip` 免安装压缩包可选。
+
+首次启动自动在文档目录创建「墨流示例」库，30 秒看完全部能力。
+
+> 当前为个人构建、未签名：
+> - **macOS** 如提示"已损坏"，执行 `xattr -dr com.apple.quarantine /Applications/墨流.app`
+> - **Windows** 如出现 SmartScreen 提示，点「更多信息 → 仍要运行」
 
 ## 从源码构建
 
@@ -87,9 +103,14 @@ Typora 把即时渲染做到了极致，但文件管理、标签页、命令面�
 git clone git@github.com:breeze-lyf/InkFlow.git
 cd InkFlow
 npm install
-npm start        # 开发模式
-npm run dist     # 打包 DMG + ZIP 到 dist/
+npm start            # 开发模式
+npm run dist         # 打包 macOS (DMG + ZIP)
+npm run dist:win     # 打包 Windows (NSIS 安装包 + ZIP)
+npm run dist:linux   # 打包 Linux (AppImage + ZIP)
+npm run dist:all     # 一次打包三平台
 ```
+
+> 跨平台打包无需对应系统：在 Mac 上即可产出 Windows 与 Linux 安装包（electron-builder 交叉构建）。
 
 ## 测试
 
@@ -108,7 +129,7 @@ inkflow/
 ├── main/          # Electron 主进程：窗口/菜单/IPC/资源服务/导出/fs 监听
 ├── renderer/      # 界面层：HTML + CSS 变量设计系统 + Vanilla JS
 │   └── js/        # app(标签/命令) editor(实例池) panels(树/大纲) overlay exporter
-├── samples/       # 内置示例文档（首启复制到 ~/Documents/墨流示例）
+├── samples/       # 内置示例文档（首启复制到系统文档目录/墨流示例）
 ├── assets/        # 品牌资产（水墨标/横标/图标）与截图
 └── scripts/       # 品牌资产加工脚本
 ```
