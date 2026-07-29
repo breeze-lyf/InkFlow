@@ -147,7 +147,17 @@
         "dir",
         "dmg",
         "zip"
-      ]
+      ],
+      "fileAssociations": [
+        { "ext": "md", "name": "Markdown 文稿", "role": "Editor" },
+        { "ext": "markdown", "name": "Markdown 文稿", "role": "Editor" },
+        { "ext": "mdown", "name": "Markdown 文稿", "role": "Editor" },
+        { "ext": "mdtxt", "name": "Markdown 文稿", "role": "Editor" }
+      ],
+      "extendInfo": {
+        "CFBundleDisplayName": "墨流 InkFlow",
+        "CFBundleSpokenName": "InkFlow"
+      }
     },
     "win": {
       "icon": "assets/icon.png",

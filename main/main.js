@@ -160,6 +160,12 @@ function registerIPC() {
   }));
 
   ipcMain.on('renderer:ready', () => {
+    // 冷启动时被要求打开的文件（Finder 双击 md）：渲染就绪后立即打开
+    if (pendingOpenFile && mainWin && !mainWin.isDestroyed()) {
+      const p = pendingOpenFile;
+      pendingOpenFile = null;
+      mainWin.webContents.send('menu:action', { action: 'open-path', payload: p });
+    }
     // 首次启动：把示例文档库复制到 ~/Documents/墨流示例 并打开
     if (isSmoke) return;
     if (settings.get('firstRunDone')) return;
@@ -438,7 +444,7 @@ function registerIPC() {
   ipcMain.on('win:confirm-close', () => {
     if (mainWin) {
       mainWin.forceClose = true;
-      mainWin.close();
+      app.quit(); // 关键：直接 close() 只关窗口，⌘Q 语义是终止进程
     }
   });
 
@@ -571,8 +577,8 @@ ${(cssLinks || []).map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
 </head><body class="vditor-reset">${html}</body></html>`;
     fs.writeFileSync(tmpHtml, doc, 'utf-8');
 
-    // 2x 高清长图：窗口宽度 = 栏宽(820) × 缩放(2)，布局视口保持 820 CSS px，
-    // 位图宽度达 1640px（原 900 窗口 + zoom 2 会把视口压到 450，等于变相 1x 输出）
+    // 2x 高清长图：窗口宽度 = 栏宽(820) × 缩放(2)，布局视口保持 820 CSS px。
+    // 高度同理：逻辑高度必须 = CSS 高 × SCALE（否则视口只有一半 CSS 高，长图被腰斩）
     const SCALE = 2;
     const COL = 820;
     let shotWin = new BrowserWindow({
@@ -585,10 +591,10 @@ ${(cssLinks || []).map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
       await shotWin.loadFile(tmpHtml);
       await shotWin.webContents.setZoomFactor(SCALE);
       await new Promise((r) => setTimeout(r, 1100));
-      const h = await shotWin.webContents.executeJavaScript(
-        'Math.min((document.body.scrollHeight || 800) + 20, 14000)'
+      const cssH = await shotWin.webContents.executeJavaScript(
+        'Math.min((document.body.scrollHeight || 800) + 20, 8000)' // CSS 高；×2 后 ≤16000，低于 GPU 纹理上限
       );
-      shotWin.setContentSize(COL * SCALE, Math.max(480, Math.ceil(h)));
+      shotWin.setContentSize(COL * SCALE, Math.max(480, Math.ceil(cssH * SCALE)));
       await new Promise((r) => setTimeout(r, 500));
       const img = await shotWin.webContents.capturePage();
       fs.writeFileSync(savePath, img.toPNG());
@@ -1119,8 +1125,9 @@ async function runFuncSmoke() {
 
   const pngPath = path.join(tmpDir, '导出测试.png');
   process.env.INKFLOW_TEST_SAVEPATH = pngPath;
-  const pngR = await js(`ink.exportImage({ html: '<h1>墨流</h1><p>导出管线</p>', cssLinks: [], suggestedName: 'x.png' })`);
-  let pngOk = false, pngW = 0;
+  const tallHtml = '<h1>墨流</h1>' + '<p>长图高度验证段落，填充足够内容以撑高页面。</p>'.repeat(120);
+  const pngR = await js(`ink.exportImage({ html: ${JSON.stringify(tallHtml)}, cssLinks: [], suggestedName: 'x.png' })`);
+  let pngOk = false, pngW = 0, pngH = 0;
   try {
     const head = Buffer.alloc(24);
     const fd = fs.openSync(pngPath, 'r');
@@ -1128,9 +1135,10 @@ async function runFuncSmoke() {
     fs.closeSync(fd);
     pngOk = head[0] === 0x89 && head[1] === 0x50;
     pngW = head.readUInt32BE(16); // IHDR 宽度
+    pngH = head.readUInt32BE(20); // IHDR 高度（需同步 2x，长图不得腰斩）
   } catch {}
-  results.push(['export-image-gen', pngR.ok === true && pngOk && pngW >= 1600]);
-  if (!(pngW >= 1600)) console.log('[debug] png-width:', pngW);
+  results.push(['export-image-gen', pngR.ok === true && pngOk && pngW >= 1600 && pngH >= 4000]);
+  if (!(pngW >= 1600 && pngH >= 4000)) console.log('[debug] png-dim:', pngW, 'x', pngH);
   delete process.env.INKFLOW_TEST_SAVEPATH;
 
   // 6.997 环境控制条与设置面板
@@ -1244,6 +1252,20 @@ app.on('second-instance', () => {
   if (mainWin) {
     if (mainWin.isMinimized()) mainWin.restore();
     mainWin.focus();
+  }
+});
+
+// Finder 双击/拖拽 .md 到 Dock：运行中直接开页签，冷启动存起来等渲染就绪
+let pendingOpenFile = null;
+app.on('open-file', (e, p) => {
+  e.preventDefault();
+  if (mainWin && !mainWin.isDestroyed()) {
+    mainWin.webContents.send('menu:action', { action: 'open-path', payload: p });
+    if (mainWin.isMinimized()) mainWin.restore();
+    mainWin.show();
+    mainWin.focus();
+  } else {
+    pendingOpenFile = p;
   }
 });
 
