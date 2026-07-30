@@ -10,7 +10,7 @@
     "start": "electron .",
     "smoke": "cross-env SMOKE=1 electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder --mac dmg zip",
+    "dist": "electron-builder --mac dmg zip && bash scripts/dmg-post.sh",
     "dist:win": "electron-builder --win nsis zip",
     "dist:linux": "electron-builder --linux AppImage zip",
     "dist:all": "electron-builder -mwl"
@@ -158,6 +158,10 @@
         "CFBundleDisplayName": "墨流 InkFlow",
         "CFBundleSpokenName": "InkFlow"
       }
+    },
+    "dmg": {
+      "title": "墨流 InkFlow",
+      "window": { "width": 560, "height": 400 }
     },
     "win": {
       "icon": "assets/icon.png",

@@ -1,0 +1,22 @@
+墨流 InkFlow · 安装说明
+========================
+
+【安装】
+把「墨流 InkFlow.app」拖进右侧「应用程序」文件夹即可。
+
+【首次打开提示"已损坏 / 无法打开"】
+应用未做 Apple 公证，跨设备传输后 macOS 会误报。两种解法任选：
+
+1. 双击本磁盘镜像里的「解除打开限制.command」，一键搞定；
+2. 或打开「终端」执行：
+   xattr -dr com.apple.quarantine "/Applications/墨流 InkFlow.app"
+
+之后双击应用即可正常使用，此操作只需一次。
+
+【设为 Markdown 默认打开方式】
+选中任意 .md 文件 → 右键 → 显示简介 → 打开方式 → 选「墨流 InkFlow」→ 全部更改。
+
+【Spotlight 搜索】
+⌘Space 输入「墨流」或「inkflow」都能找到。
+
+官网/源码：https://github.com/breeze-lyf/InkFlow
