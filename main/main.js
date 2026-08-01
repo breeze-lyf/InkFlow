@@ -648,6 +648,31 @@ async function runSmoke() {
   mainWin.webContents.send('menu:action', { action: 'open-path', payload: demoFile });
   await wait(2600);
 
+  if (process.env.SMOKE_TABLE_PROBE === '1') {
+    const tp = await mainWin.webContents.executeJavaScript(`(async () => {
+      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+      App.setTheme('dark');
+      await sleep(600);
+      Editor.setValue('| A | B |\\n|---|---|\\n| 1 | 2 |\\n');
+      await sleep(900);
+      const th = document.querySelector('.editor-host:not(.hidden) .vditor-ir th');
+      const td = document.querySelector('.editor-host:not(.hidden) .vditor-ir td');
+      const table = document.querySelector('.editor-host:not(.hidden) .vditor-ir table');
+      const links = [...document.querySelectorAll('link[rel=stylesheet]')].map(l => l.href);
+      const cs = (e) => e ? getComputedStyle(e) : null;
+      const t = cs(table), h = cs(th), d = cs(td);
+      return {
+        tableBg: t && t.backgroundColor, thBg: h && h.backgroundColor,
+        thColor: h && h.color, tdBg: d && d.backgroundColor, tdColor: d && d.color,
+        tableBorder: h && h.borderColor,
+        contentThemeLink: links.filter(h => h.includes('content')).join(' | '),
+        inkVars: getComputedStyle(document.querySelector('.vditor-ir .vditor-reset')).getPropertyValue('--ink-quote-bg'),
+        tableHTML: table ? table.outerHTML.slice(0, 220) : 'none',
+      };
+    })()`);
+    console.log('[table-probe]', JSON.stringify(tp, null, 1));
+  }
+
   if (process.env.SMOKE_PROBE === '1') {
     const probe = await mainWin.webContents.executeJavaScript(`(() => {
       const pick = (sel) => {
