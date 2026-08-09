@@ -22,7 +22,7 @@ const Exporter = {
   async exportPdf() {
     const tab = App.activeTab();
     if (!tab) { toast('没有可导出的文档'); return; }
-    const html = Editor.getExportHtml();
+    const html = await Editor.getExportHtml();
     const cssLinks = this._lightCssLinks();
     toast('正在生成 PDF…', 30000);
     const r = await ink.exportPdf({ html, cssLinks, suggestedName: P.stem(tab.name) + '.pdf' });
@@ -34,7 +34,7 @@ const Exporter = {
   async exportWord() {
     const tab = App.activeTab();
     if (!tab) { toast('没有可导出的文档'); return; }
-    const html = Editor.getExportHtml();
+    const html = await Editor.getExportHtml();
     const themeCss = await ink.readCss('renderer/css/content/inkflow-light.css');
     const cssTexts = themeCss.ok ? [themeCss.content] : [];
     toast('正在生成 Word 文档…', 30000);
@@ -47,7 +47,7 @@ const Exporter = {
   async exportImage() {
     const tab = App.activeTab();
     if (!tab) { toast('没有可导出的文档'); return; }
-    const html = Editor.getExportHtml();
+    const html = await Editor.getExportHtml();
     const cssLinks = this._lightCssLinks();
     toast('正在生成图片…', 30000);
     const r = await ink.exportImage({ html, cssLinks, suggestedName: P.stem(tab.name) + '.png' });
@@ -59,7 +59,7 @@ const Exporter = {
   async exportHtml() {
     const tab = App.activeTab();
     if (!tab) { toast('没有可导出的文档'); return; }
-    const html = Editor.getExportHtml();
+    const html = await Editor.getExportHtml();
     const dark = document.body.dataset.theme === 'dark';
 
     const cssTexts = [];

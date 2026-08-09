@@ -552,10 +552,31 @@ const Editor = {
     return true;
   },
 
-  // 获取导出用 HTML（图片路径替换为 file:// 绝对路径）
-  getExportHtml() {
+  // 获取导出用 HTML（mermaid 渲染为 SVG + 图片路径替换为 file:// 绝对路径）
+  async getExportHtml() {
     const tab = App.activeTab();
     let html = this.vditor.getHTML();
+
+    // vditor.getHTML() 只转换语法不跑图表渲染器 —— 克隆到屏外容器补渲染 mermaid
+    if (html.includes('language-mermaid') && window.Vditor && Vditor.mermaidRender) {
+      const holder = document.createElement('div');
+      holder.style.cssText = 'position:fixed;left:-99999px;top:0;width:820px;visibility:hidden;';
+      holder.innerHTML = html;
+      document.body.appendChild(holder);
+      try {
+        Vditor.mermaidRender(holder, '../node_modules/vditor', 'default');
+        // mermaid.run 是异步的：轮询等 SVG 出现（超时兜底 4s）
+        const deadline = Date.now() + 4000;
+        while (Date.now() < deadline) {
+          const pending = holder.querySelector('.language-mermaid:not([data-processed="true"])');
+          if (!pending && holder.querySelector('.language-mermaid svg')) break;
+          await new Promise((r) => setTimeout(r, 120));
+        }
+        html = holder.innerHTML;
+      } catch { /* 渲染失败则保留原样 */ }
+      holder.remove();
+    }
+
     if (tab && tab.path) {
       const dir = P.dirname(tab.path);
       html = html.replace(/(<img[^>]+src=")([^"]+)(")/g, (m, pre, src, post) => {

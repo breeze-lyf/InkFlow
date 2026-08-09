@@ -3,7 +3,7 @@
 # electron-builder 的 dmg.contents 对额外文件静默跳过，只能事后注入
 set -e
 cd "$(dirname "$0")/.."
-DMG=$(ls dist/墨流-*-arm64.dmg 2>/dev/null | head -1)
+DMG=$(ls dist/墨流-*-arm64.dmg 2>/dev/null | sort -V | tail -1)
 [ -z "$DMG" ] && echo "未找到 DMG" && exit 1
 hdiutil convert "$DMG" -format UDRW -o /tmp/inkflow-rw.dmg >/dev/null
 hdiutil attach -readwrite -nobrowse /tmp/inkflow-rw.dmg >/dev/null

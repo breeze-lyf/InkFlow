@@ -1,7 +1,7 @@
 {
   "name": "inkflow",
   "productName": "墨流 InkFlow",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "优雅流畅的桌面 Markdown 编辑器 —— 即时渲染 · 文件库 · 命令面板",
   "main": "main/main.js",
   "author": "InkFlow",
@@ -149,10 +149,26 @@
         "zip"
       ],
       "fileAssociations": [
-        { "ext": "md", "name": "Markdown 文稿", "role": "Editor" },
-        { "ext": "markdown", "name": "Markdown 文稿", "role": "Editor" },
-        { "ext": "mdown", "name": "Markdown 文稿", "role": "Editor" },
-        { "ext": "mdtxt", "name": "Markdown 文稿", "role": "Editor" }
+        {
+          "ext": "md",
+          "name": "Markdown 文稿",
+          "role": "Editor"
+        },
+        {
+          "ext": "markdown",
+          "name": "Markdown 文稿",
+          "role": "Editor"
+        },
+        {
+          "ext": "mdown",
+          "name": "Markdown 文稿",
+          "role": "Editor"
+        },
+        {
+          "ext": "mdtxt",
+          "name": "Markdown 文稿",
+          "role": "Editor"
+        }
       ],
       "extendInfo": {
         "CFBundleDisplayName": "墨流 InkFlow",
@@ -161,7 +177,10 @@
     },
     "dmg": {
       "title": "墨流 InkFlow",
-      "window": { "width": 560, "height": 400 }
+      "window": {
+        "width": 560,
+        "height": 360
+      }
     },
     "win": {
       "icon": "assets/icon.png",
@@ -184,13 +203,6 @@
         "AppImage",
         "zip"
       ]
-    },
-    "dmg": {
-      "title": "墨流 InkFlow",
-      "window": {
-        "width": 560,
-        "height": 360
-      }
     },
     "asarUnpack": [
       "node_modules/html-to-docx/**"

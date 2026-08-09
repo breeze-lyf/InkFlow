@@ -403,10 +403,22 @@ const FileTree = {
   },
 
   // 文件系统外部变化触发的无感刷新（行内编辑期间让路，不打断输入）
+  // 自动保存每几秒就会触发 watcher —— 只有条目真的变了才重建 DOM，否则零打扰
   async softRefresh() {
     if (this._editing || !this.root) return;
-    this.cache.clear();
-    await this.render();
+    const key = (e) => `${e.path}|${e.isDir ? 1 : 0}`;
+    let changed = false;
+    for (const [dir, oldEntries] of [...this.cache]) {
+      const r = await ink.readDir(dir, { sort: App.settings.fileSortMode || 'name' });
+      const fresh = r.ok ? r.entries : [];
+      const same = fresh.length === oldEntries.length
+        && fresh.every((e, i) => key(e) === key(oldEntries[i]));
+      if (!same) {
+        this.cache.set(dir, fresh);
+        changed = true;
+      }
+    }
+    if (changed) await this.render();
   },
 
   collapseAll() {

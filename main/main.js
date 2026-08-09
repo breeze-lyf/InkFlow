@@ -764,7 +764,14 @@ async function runFuncSmoke() {
   });
   await wait(400);
 
-  const js = (code) => mainWin.webContents.executeJavaScript(code);
+  const js = async (code) => {
+    try {
+      return await mainWin.webContents.executeJavaScript(code);
+    } catch (e) {
+      console.log('[js-fail]', e.message, '| CODE:', code.replace(/\s+/g, ' ').slice(0, 160));
+      return null;
+    }
+  };
 
   // 1. 打开文件
   mainWin.webContents.send('menu:action', { action: 'open-path', payload: testFile });
@@ -797,7 +804,7 @@ async function runFuncSmoke() {
   // 6. 切回测试文档，验证导出 HTML 生成
   await js(`App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}))`);
   await wait(500);
-  results.push(['export-html-gen', await js(`Editor.getExportHtml().includes('<h1')`)]);
+  results.push(['export-html-gen', await js(`(async () => (await Editor.getExportHtml()).includes('<h1'))()`)]);
 
   // 6.5 TOC 锚点链接：点击后页面应滚动
   const demoPath = path.join(__dirname, '..', 'samples', '功能演示.md');
@@ -1106,6 +1113,31 @@ async function runFuncSmoke() {
   })()`);
   results.push(['img-toolbar-delete', imgDel.visible === true && imgDel.removed === true && imgDel.kept === true]);
   if (!(imgDel.visible && imgDel.removed)) console.log('[debug] img-toolbar:', JSON.stringify(imgDel));
+
+  // 6.97811 mermaid 导出：应渲染为 SVG 而非显示原始代码
+  const mer = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    await App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}));
+    await sleep(400);
+    Editor.setValue('## 流程\\n\\n\`\`\`mermaid\\ngraph TD;\\n  A-->B;\\n\`\`\`\\n');
+    await sleep(800);
+    const html = await Editor.getExportHtml();
+    return { hasSvg: html.includes('<svg'), noRawCode: !html.includes('A--&gt;B') && !html.includes('A-->B</') };
+  })()`);
+  results.push(['mermaid-export-svg', mer.hasSvg === true && mer.noRawCode === true]);
+  if (!mer.hasSvg) console.log('[debug] mermaid-export:', JSON.stringify(mer));
+
+  // 6.97812 树软刷新去抖：内容没变时不重建 DOM（防自动保存引起的闪烁）
+  const flick = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const rowA = document.querySelector('#file-tree .tree-row');
+    await FileTree.softRefresh();
+    await sleep(300);
+    const rowB = document.querySelector('#file-tree .tree-row');
+    const stable = rowA === rowB;
+    return { stable };
+  })()`);
+  results.push(['tree-no-flicker', flick.stable === true]);
 
   // 6.979 markmap 离线渲染（懒加载本地引擎，应出现 svg 导图）
   await js(`App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}))`);
