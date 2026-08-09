@@ -349,6 +349,35 @@ const App = {
   },
 
   /* ================= 文件夹 ================= */
+  // 外部拖入的决策入口（原则："打开"优先于"导入"，永远不静默）
+  async _handleDropPath(p) {
+    const ext = P.extname(p).toLowerCase();
+    if (!ext) {
+      // 无扩展名：大概率是文件夹 → 打开为文档库
+      const r = await ink.readDir(p, {});
+      if (r.ok) { await this.openFolder(p); toast('已打开文档库 ' + P.basename(p)); }
+      else toast('无法打开 ' + P.basename(p));
+    } else if (['.md', '.markdown', '.mdown', '.mdtxt', '.txt'].includes(ext)) {
+      await this.openFile(p);
+      toast('已打开 ' + P.basename(p));
+    } else if (['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(ext)) {
+      const tab = this.activeTab();
+      if (tab && tab.path) {
+        const r = await ink.copyImage(p, P.dirname(tab.path));
+        if (r.ok) {
+          const rel = r.relPath.split('/').map(encodeURIComponent).join('/');
+          Editor.insert(`![${P.stem(p)}](${rel})\n`);
+        }
+      } else {
+        toast('请先保存文件，再插入图片');
+      }
+    } else if (['.pdf', '.bmp'].includes(ext)) {
+      this.openPreview(p);
+    } else {
+      toast('暂不支持的类型：' + ext);
+    }
+  },
+
   async openFolderDialog() {
     const dir = await ink.openFolderDialog();
     if (!dir) return;
@@ -425,31 +454,23 @@ const App = {
     });
 
     // 拖拽文件进窗口（.md 直接打开；图片插入当前文档）
-    window.addEventListener('dragover', (e) => e.preventDefault());
+    // 外部拖入统一在此接管（capture 阶段拦截，防止 vditor 自带的 drop 把文件插进正文）
+    window.addEventListener('dragover', (e) => {
+      if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
     window.addEventListener('drop', async (e) => {
+      if (!e.dataTransfer || ![...e.dataTransfer.types].includes('Files')) return;
       e.preventDefault();
+      e.stopPropagation();
       const files = Array.from(e.dataTransfer.files || []);
       for (const f of files) {
         const p = ink.getFilePath(f);
-        if (!p) continue;
-        const ext = P.extname(p).toLowerCase();
-        if (['.md', '.markdown', '.mdown', '.txt'].includes(ext)) {
-          await this.openFile(p);
-          toast('已打开 ' + P.basename(p));
-        } else if (['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(ext)) {
-          const tab = this.activeTab();
-          if (tab && tab.path) {
-            const r = await ink.copyImage(p, P.dirname(tab.path));
-            if (r.ok) {
-              const rel = r.relPath.split('/').map(encodeURIComponent).join('/');
-              Editor.insert(`![${P.stem(p)}](${rel})\n`);
-            }
-          } else {
-            toast('请先保存文件，再插入图片');
-          }
-        }
+        if (p) await this._handleDropPath(p);
       }
-    });
+    }, true);
 
     // 模态框关闭
     $$('.modal .modal-mask, .modal [data-close]').forEach((m) => {

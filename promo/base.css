@@ -1,0 +1,22 @@
+/* 墨流宣传物料 · 共享设计令牌（与产品/官网同源） */
+:root {
+  --bg: #f4f2ec; --bg-card: #faf9f5; --bg-el: #ffffff;
+  --t1: #2b2925; --t2: #6e695e; --t3: #a39d8e;
+  --border: rgba(60,54,36,.12);
+  --accent: #4c5fd5; --accent-2: #3a4bc0; --accent-soft: rgba(76,95,213,.1);
+  --ink-bg: #17191e; --ink-card: #1b1e24;
+  --shadow: 0 30px 80px rgba(50,45,30,.2), 0 6px 20px rgba(50,45,30,.1);
+  --shadow-s: 0 4px 16px rgba(50,45,30,.1);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font); background: var(--bg); overflow: hidden; }
+.chip {
+  display: inline-flex; align-items: center;
+  font-size: 15px; color: var(--accent); font-weight: 600;
+  background: var(--accent-soft); border-radius: 999px; padding: 8px 18px;
+}
+.shot {
+  border-radius: 18px; box-shadow: var(--shadow);
+  border: 1px solid var(--border); display: block;
+}

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><link rel="stylesheet" href="base.css">
+<style>
+  body { width: 1600px; height: 900px; display: flex; align-items: center; padding: 70px 90px; gap: 70px; }
+  .l { flex: 0 0 560px; }
+  .logo { display: flex; align-items: center; gap: 18px; margin-bottom: 40px; }
+  .logo img { width: 64px; height: 64px; border-radius: 16px; box-shadow: var(--shadow-s); }
+  .logo span { font-size: 30px; font-weight: 600; letter-spacing: .5px; }
+  h1 { font-size: 66px; font-weight: 500; line-height: 1.2; letter-spacing: -1px; margin-bottom: 26px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .sub { font-size: 21px; color: var(--t2); line-height: 1.7; margin-bottom: 38px; }
+  .chips { display: flex; gap: 12px; }
+  .r { flex: 1; transform: perspective(1400px) rotateY(-7deg) rotateX(1.5deg); }
+  .r img { width: 100%; }
+</style></head>
+<body>
+  <div class="l">
+    <div class="logo"><img src="../assets/brand-mark.png"><span>墨流 InkFlow</span></div>
+    <h1>写下来，<br>就是<em>排版</em>。</h1>
+    <p class="sub">免费开源的 macOS Markdown 编辑器<br>即时渲染 · 文档库 · 一键导出 PDF / Word / 长图</p>
+    <div class="chips"><span class="chip">免费</span><span class="chip">开源</span><span class="chip">纸墨双主题</span></div>
+  </div>
+  <div class="r"><img class="shot" src="shot-light.png"></div>
+</body></html>

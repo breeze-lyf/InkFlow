@@ -1139,6 +1139,32 @@ async function runFuncSmoke() {
   })()`);
   results.push(['tree-no-flicker', flick.stable === true]);
 
+  // 6.97813 外部拖入决策：md→页签 / 目录→文档库 / pdf→预览 / 未知→提示（且不插入正文）
+  const drop = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    await App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}));
+    await sleep(300);
+    const bodyBefore = Editor.getValue();
+    await App._handleDropPath(${JSON.stringify(testFile)});
+    await sleep(500);
+    const mdOk = App.activeTab() && App.activeTab().path === ${JSON.stringify(testFile)};
+    await App._handleDropPath(${JSON.stringify(samplesDir)});
+    await sleep(900);
+    const dirOk = FileTree.root === ${JSON.stringify(samplesDir)};
+    const pdfPath = ${JSON.stringify(samplesDir)} + '/拖入测试.pdf';
+    await ink.writeFile(pdfPath, '%PDF-1.4 fake');
+    await App._handleDropPath(pdfPath);
+    await sleep(500);
+    const pdfOk = App.activeTab() && App.activeTab().isPreview === true;
+    await App._handleDropPath('/tmp/xxx.bin');
+    await sleep(300);
+    const toastOk = document.querySelector('#toast').textContent.includes('暂不支持');
+    const noInsert = bodyBefore === Editor.getValue();
+    return { mdOk, dirOk, pdfOk, toastOk, noInsert };
+  })()`);
+  results.push(['drop-logic', !!(drop && drop.mdOk && drop.dirOk && drop.pdfOk && drop.toastOk && drop.noInsert)]);
+  if (drop && !(drop.mdOk && drop.dirOk && drop.pdfOk && drop.toastOk && drop.noInsert)) console.log('[debug] drop:', JSON.stringify(drop));
+
   // 6.979 markmap 离线渲染（懒加载本地引擎，应出现 svg 导图）
   await js(`App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}))`);
   await wait(500);
