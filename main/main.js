@@ -1119,7 +1119,7 @@ async function runFuncSmoke() {
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     await App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}));
     await sleep(400);
-    Editor.setValue('## 流程\\n\\n\`\`\`mermaid\\ngraph TD;\\n  A-->B;\\n\`\`\`\\n');
+    Editor.setValue('## 流程\\n\\n\`\`\`mermaid\\nflowchart TB\\n  A-->B;\\n\`\`\`\\n');
     await sleep(800);
     const html = await Editor.getExportHtml();
     return { hasSvg: html.includes('<svg'), noRawCode: !html.includes('A--&gt;B') && !html.includes('A-->B</') };
