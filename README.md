@@ -43,9 +43,9 @@ Typora 把即时渲染做到了极致，但文件管理、标签页、命令面�
 
 | 格式 | 说明 |
 | --- | --- |
-| **PDF** | A4 排版，打印级样式 |
+| **PDF** | A4 排版，打印级样式；Mermaid 流程图渲染为真图，不是代码 |
 | **Word (.docx)** | 图片自动内联，表格不断行 |
-| **PNG 长图** | 2x 高清，全文一图到底 |
+| **PNG 长图** | 2x 高清（1640px 宽），全文一图到底 |
 | **HTML** | 自包含单文件，内联样式与字体 |
 
 ## 纸墨美学
@@ -79,23 +79,14 @@ Typora 把即时渲染做到了极致，但文件管理、标签页、命令面�
 
 ## 下载与安装
 
-从 [Releases](https://github.com/breeze-lyf/InkFlow/releases) 下载对应平台的安装包：
+官网（含下载入口）：**[inkflow.yufeng.fun](https://inkflow.yufeng.fun)**
 
-| 平台 | 文件 | 说明 |
-| --- | --- | --- |
-| **macOS** (Apple Silicon) | `InkFlow-x.y.z-arm64.dmg` | 拖入 Applications 即可 |
-| **Windows** (Intel/AMD) | `InkFlow-Setup-x.y.z-x64.exe` | 安装程序，推荐大多数用户 |
-| **Windows** (ARM64) | `InkFlow-Setup-x.y.z-arm64.exe` | Surface Pro X 等 ARM 设备 |
-| **Linux** (x64) | `InkFlow-x.y.z.AppImage` | 免安装，`chmod +x` 后直接运行 |
-| **Linux** (ARM64) | `InkFlow-x.y.z-arm64.AppImage` | ARM 设备 |
-
-各平台另有 `.zip` 免安装压缩包可选。
+当前发布 **macOS (Apple Silicon)** 版本，从 [Releases](https://github.com/breeze-lyf/InkFlow/releases) 下载 `墨流-x.y.z-arm64.dmg`，拖入「应用程序」即可。Windows / Linux 版本可联系作者打包。
 
 首次启动自动在文档目录创建「墨流示例」库，30 秒看完全部能力。
 
-> 当前为个人构建、未签名：
-> - **macOS** 如提示"已损坏"，执行 `xattr -dr com.apple.quarantine /Applications/墨流.app`
-> - **Windows** 如出现 SmartScreen 提示，点「更多信息 → 仍要运行」
+> 当前为个人构建、未公证：**macOS** 如提示"已损坏"，双击 DMG 内的「解除打开限制.command」一键解除（或终端执行 `xattr -dr com.apple.quarantine "/Applications/墨流 InkFlow.app"`）。
+> 设为 Markdown 默认打开：选中任意 .md 文件 → 右键 → 显示简介 → 打开方式 → 墨流 InkFlow → 全部更改。
 
 ## 从源码构建
 
