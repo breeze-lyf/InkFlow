@@ -107,6 +107,18 @@ const App = {
       cachedValue: r.content,
     });
     await this.activate(this.tabs.length - 1);
+    // vditor 打开时会规范化内容（补行尾换行等），以规范化后的值为脏检查基线，
+    // 否则"只是打开看了一眼"也会被误判为有未保存更改
+    const t = this.activeTab();
+    if (t && t.path === path) {
+      const normalized = Editor.getValue(t.key);
+      if (normalized !== null) {
+        t.savedValue = normalized;
+        t.cachedValue = normalized;
+        t.dirty = false;
+        this._renderTabs();
+      }
+    }
     ink.addRecent(path, 'file');
     if (!silent) this._renderWelcome();
     this._persistSession();

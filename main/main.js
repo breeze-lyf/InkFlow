@@ -1155,15 +1155,38 @@ async function runFuncSmoke() {
     await ink.writeFile(pdfPath, '%PDF-1.4 fake');
     await App._handleDropPath(pdfPath);
     await sleep(500);
-    const pdfOk = App.activeTab() && App.activeTab().isPreview === true;
+    const pdfOk = App.activeTab() && App.activeTab().kind === 'preview';
     await App._handleDropPath('/tmp/xxx.bin');
     await sleep(300);
     const toastOk = document.querySelector('#toast').textContent.includes('暂不支持');
-    const noInsert = bodyBefore === Editor.getValue();
-    return { mdOk, dirOk, pdfOk, toastOk, noInsert };
+    const mdTab = App.tabs.find(t => t.path === ${JSON.stringify(testFile)});
+    await App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}));
+    await sleep(400);
+    const bodyAfter = Editor.getValue();
+    let diffAt = -1;
+    for (let i = 0; i < Math.max(bodyBefore.length, bodyAfter.length); i++) {
+      if (bodyBefore[i] !== bodyAfter[i]) { diffAt = i; break; }
+    }
+    const noInsert = bodyBefore === bodyAfter;
+    return { mdOk, dirOk, pdfOk, toastOk, noInsert,
+      bl: bodyBefore.length, al: bodyAfter.length, diffAt,
+      around: diffAt >= 0 ? JSON.stringify(bodyAfter.slice(Math.max(0, diffAt - 15), diffAt + 15)) : '' };
   })()`);
   results.push(['drop-logic', !!(drop && drop.mdOk && drop.dirOk && drop.pdfOk && drop.toastOk && drop.noInsert)]);
   if (drop && !(drop.mdOk && drop.dirOk && drop.pdfOk && drop.toastOk && drop.noInsert)) console.log('[debug] drop:', JSON.stringify(drop));
+
+  // 6.97814 打开不标脏：vditor 规范化后的基线对齐（无行尾换行的文件最容易暴露）
+  const nodirty = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const p = ${JSON.stringify(samplesDir)} + '/无尾换行.md';
+    await ink.writeFile(p, '# 没有行尾换行');
+    await App.openFile(p);
+    await sleep(800);
+    const tab = App.tabs.find(t => t.path === p);
+    return { dirty: tab ? tab.dirty : 'no-tab' };
+  })()`);
+  results.push(['open-no-dirty', nodirty.dirty === false]);
+  if (nodirty.dirty !== false) console.log('[debug] open-no-dirty:', JSON.stringify(nodirty));
 
   // 6.979 markmap 离线渲染（懒加载本地引擎，应出现 svg 导图）
   await js(`App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}))`);
