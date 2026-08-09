@@ -744,8 +744,10 @@ const App = {
       const ico = el('span', 'ov-ico');
       ico.innerHTML = type === 'folder' ? ICONS.folder : ICONS.file;
       item.appendChild(ico);
-      item.appendChild(el('span', 'wri-name', P.basename(p)));
-      item.appendChild(el('span', 'wri-path', p));
+      item.appendChild(el('span', 'wri-name', P.basename(p.replace(/\/$/, ''))));
+      // 路径只显示所在目录（文件名上行已有）：home 缩写为 ~，CSS 负责从左侧截断
+      const pretty = P.dirname(p.replace(/\/$/, '')).replace(/^\/Users\/[^/]+/, '~');
+      item.appendChild(el('span', 'wri-path', pretty));
       item.onclick = () => this.openPath(p);
       box.appendChild(item);
     }
