@@ -731,6 +731,9 @@ async function runSmoke() {
       mainWin.webContents.send('menu:action', { action: 'set-page-width', payload: 'wide' });
     } else if (shot === 'sidebar-off') {
       mainWin.webContents.send('menu:action', { action: 'toggle-sidebar' });
+    } else if (shot.startsWith('accent-')) {
+      const v = shot.split('-')[1];
+      await mainWin.webContents.executeJavaScript(`App.setAccent(${JSON.stringify(v || 'indigo')}); 'ok'`);
     } else if (shot.startsWith('scroll-')) {
       const y = parseInt(shot.split('-')[1], 10) || 0;
       await mainWin.webContents.executeJavaScript(`
@@ -1187,6 +1190,24 @@ async function runFuncSmoke() {
   })()`);
   results.push(['open-no-dirty', nodirty.dirty === false]);
   if (nodirty.dirty !== false) console.log('[debug] open-no-dirty:', JSON.stringify(nodirty));
+
+  // 6.97815 主色调切换：印章朱生效 + 回切靛蓝还原
+  const acc = await js(`(async () => {
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    App.setTheme('light');
+    await sleep(300);
+    App.setAccent('zhu');
+    await sleep(300);
+    const cs = getComputedStyle(document.body);
+    const zhuOk = document.body.dataset.accent === 'zhu' && cs.getPropertyValue('--accent').trim() === '#b5432f';
+    App.setAccent('indigo');
+    await sleep(200);
+    const backOk = getComputedStyle(document.body).getPropertyValue('--accent').trim() === '#4c5fd5';
+    App.setTheme('system');
+    return { zhuOk, backOk };
+  })()`);
+  results.push(['accent-palette', acc.zhuOk === true && acc.backOk === true]);
+  if (!(acc.zhuOk && acc.backOk)) console.log('[debug] accent:', JSON.stringify(acc));
 
   // 6.979 markmap 离线渲染（懒加载本地引擎，应出现 svg 导图）
   await js(`App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}))`);

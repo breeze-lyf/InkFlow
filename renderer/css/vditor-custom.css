@@ -84,6 +84,8 @@ body[data-toolbar="show"] .ink-editor .vditor-toolbar { display: flex; }
 .ink-editor .vditor-ir span.vditor-ir__node--hidden { color: var(--text-faint); }
 .ink-editor .vditor-ir .vditor-ir__link { color: var(--text-3) !important; }
 .ink-editor .vditor-ir .vditor-ir__node--expand .vditor-ir__marker--bracket { color: var(--accent); }
+/* IR 链接文字跟随主色调（vditor 默认暗色是琥珀色，与主题脱节） */
+.ink-editor .vditor { --ir-link-color: var(--accent); }
 
 /* 当前块微高亮 */
 .ink-editor .vditor-ir .vditor-ir__node--active { position: relative; }

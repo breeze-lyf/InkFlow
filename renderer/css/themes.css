@@ -100,3 +100,34 @@ body[data-theme="dark"] {
 *::-webkit-scrollbar-corner { background: transparent; }
 
 ::selection { background: var(--selection); }
+
+/* ============ 主色调变体（设置面板可选；默认 indigo 无需覆盖） ============ */
+/* 印章朱：宣纸 + 朱砂印泥 */
+body[data-accent="zhu"][data-theme="light"] {
+  --accent: #b5432f; --accent-strong: #96392a; --accent-soft: rgba(181, 67, 47, 0.12); --link: #b5432f;
+}
+body[data-accent="zhu"][data-theme="dark"] {
+  --accent: #e08a72; --accent-strong: #eba186; --accent-soft: rgba(224, 138, 114, 0.16); --link: #e08a72;
+}
+/* 黛蓝：降饱和的传统黛色 */
+body[data-accent="dai"][data-theme="light"] {
+  --accent: #41577f; --accent-strong: #32435f; --accent-soft: rgba(65, 87, 127, 0.12); --link: #41577f;
+}
+body[data-accent="dai"][data-theme="dark"] {
+  --accent: #92a9d4; --accent-strong: #abbede; --accent-soft: rgba(146, 169, 212, 0.16); --link: #92a9d4;
+}
+/* 茶褐：暖木茶色，最安静 */
+body[data-accent="cha"][data-theme="light"] {
+  --accent: #8a6534; --accent-strong: #6e4f27; --accent-soft: rgba(138, 101, 52, 0.13); --link: #8a6534;
+}
+body[data-accent="cha"][data-theme="dark"] {
+  --accent: #c9a06a; --accent-strong: #d9b47e; --accent-soft: rgba(201, 160, 106, 0.16); --link: #c9a06a;
+}
+
+/* 编辑器内容主题的强调色同步（高特异性覆盖内容主题的 --ink-accent 族） */
+body[data-accent="zhu"][data-theme="light"] .vditor-reset { --ink-accent: #b5432f; --ink-accent-strong: #96392a; }
+body[data-accent="zhu"][data-theme="dark"] .vditor-reset { --ink-accent: #e08a72; --ink-accent-strong: #eba186; }
+body[data-accent="dai"][data-theme="light"] .vditor-reset { --ink-accent: #41577f; --ink-accent-strong: #32435f; }
+body[data-accent="dai"][data-theme="dark"] .vditor-reset { --ink-accent: #92a9d4; --ink-accent-strong: #abbede; }
+body[data-accent="cha"][data-theme="light"] .vditor-reset { --ink-accent: #8a6534; --ink-accent-strong: #6e4f27; }
+body[data-accent="cha"][data-theme="dark"] .vditor-reset { --ink-accent: #c9a06a; --ink-accent-strong: #d9b47e; }

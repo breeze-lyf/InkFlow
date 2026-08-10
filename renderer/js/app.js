@@ -26,6 +26,7 @@ const App = {
     CtxMenu.init();
     Overlay.init();
     this._applyThemeSetting(this.settings.theme || 'system');
+    this._applyAccent();
     this._applyFontSize(this.settings.fontSize || 16);
     this._applyPageWidth(this.settings.pageWidth || 'normal');
     document.body.dataset.sidebar = this.settings.sidebarVisible === false ? 'hidden' : 'visible';
@@ -596,6 +597,19 @@ const App = {
     this._applyThemeSetting(mode);
   },
 
+  /* ---- 主色调（经典靛蓝 / 印章朱 / 黛蓝 / 茶褐） ---- */
+  setAccent(v) {
+    this.settings.accent = v;
+    this.setSetting({ accent: v });
+    this._applyAccent();
+  },
+
+  _applyAccent() {
+    const v = this.settings.accent || 'indigo';
+    document.body.dataset.accent = v;
+    $$('#set-accent button').forEach((b) => b.classList.toggle('active', b.dataset.v === v));
+  },
+
   /* ================= 设置面板 ================= */
   openSettings() {
     const s = this.settings;
@@ -616,6 +630,9 @@ const App = {
     });
     $$('#set-theme button').forEach((b) => {
       b.onclick = () => this.setTheme(b.dataset.v);
+    });
+    $$('#set-accent button').forEach((b) => {
+      b.onclick = () => this.setAccent(b.dataset.v);
     });
     $$('#set-pagewidth button').forEach((b) => {
       b.onclick = () => { this.setPageWidth(b.dataset.v); this.openSettings(); };
