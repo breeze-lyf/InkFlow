@@ -110,13 +110,21 @@
   display: block;
   overflow-x: auto;
 }
-.vditor-reset th, .vditor-reset td {
+/* 覆盖 vditor 自带 index.css 的硬编码浅色表格规则
+   （tr #fafbfc / tbody tr:nth-child(2n) #fff / 边框 #dfe2e5，特异性更高，须等量齐观） */
+.vditor-reset table tr {
+  background-color: transparent;
+  border-top: none;
+}
+.vditor-reset table tbody tr:nth-child(2n) { background-color: transparent; }
+.vditor-reset table th, .vditor-reset table td {
   border: 1px solid var(--ink-border);
   padding: 7px 14px;
   text-align: left;
+  white-space: normal;
 }
-.vditor-reset th { background: var(--ink-quote-bg); font-weight: 600; }
-.vditor-reset tr:nth-child(even) td { background: rgba(235, 230, 215, 0.025); }
+.vditor-reset table th { background: rgba(235, 230, 215, 0.08); font-weight: 600; }
+.vditor-reset table tr:nth-child(even) td { background: rgba(235, 230, 215, 0.03); }
 
 .vditor-reset hr {
   border: none;
