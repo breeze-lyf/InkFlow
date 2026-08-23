@@ -1,28 +1,48 @@
 {
   "name": "inkflow",
   "productName": "墨流 InkFlow",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "优雅流畅的桌面 Markdown 编辑器 —— 即时渲染 · 文件库 · 命令面板",
   "main": "main/main.js",
   "author": "InkFlow",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
+    "postinstall": "node scripts/patch-vditor.js",
     "start": "electron .",
-    "smoke": "cross-env SMOKE=1 electron .",
+    "smoke": "node scripts/run-smoke.js --source --expect 44",
+    "test": "node scripts/run-npm-tasks.js test:unit test:syntax",
+    "test:unit": "node scripts/run-unit-tests.js",
+    "test:syntax": "node scripts/check-syntax.js",
+    "test:smoke": "node scripts/run-smoke.js --source --expect 44",
+    "test:packaged": "node scripts/run-smoke.js --packaged --expect 44",
+    "version:check": "node scripts/check-versions.js",
+    "artifacts:check": "node scripts/check-artifacts.js --platform mac",
+    "verify": "node scripts/run-npm-tasks.js test version:check test:smoke",
+    "release:sync": "node scripts/release.js sync",
+    "release:check": "node scripts/release.js check",
     "pack": "electron-builder --dir",
+    "pack:mac": "electron-builder --mac --dir",
+    "pack:win": "electron-builder --win --dir",
+    "pack:linux": "electron-builder --linux --dir",
     "dist": "electron-builder --mac dmg zip && bash scripts/dmg-post.sh",
     "dist:win": "electron-builder --win nsis zip",
     "dist:linux": "electron-builder --linux AppImage zip",
     "dist:all": "electron-builder -mwl"
   },
   "dependencies": {
-    "html-to-docx": "^1.8.0",
-    "vditor": "^3.10.8"
+    "html-to-docx": "1.8.0",
+    "htmlparser2": "12.0.0",
+    "vditor": "3.11.3"
   },
   "devDependencies": {
-    "cross-env": "^7.0.3",
-    "electron": "^33.2.1",
-    "electron-builder": "^25.1.8"
+    "electron": "43.4.1",
+    "electron-builder": "26.15.3"
+  },
+  "overrides": {
+    "nanoid": "3.3.18"
   },
   "build": {
     "appId": "com.inkflow.markdown",
@@ -132,11 +152,26 @@
       "node_modules/vditor/dist/js/mermaid/**",
       "node_modules/vditor/dist/js/highlight.js/**",
       "node_modules/vditor/dist/js/echarts/**",
+      "node_modules/vditor/dist/js/markmap/**",
+      "node_modules/vditor/dist/js/smiles-drawer/**",
       "node_modules/vditor/dist/images/**",
       "!node_modules/vditor/dist/js/mathjax/**",
       "!node_modules/vditor/dist/js/graphviz/**",
       "!node_modules/vditor/dist/js/abcjs/**",
       "!node_modules/vditor/dist/js/flowchart.js/**"
+    ],
+    "fileAssociations": [
+      {
+        "ext": [
+          "md",
+          "markdown",
+          "mdown",
+          "mdtxt"
+        ],
+        "name": "Markdown 文稿",
+        "role": "Editor",
+        "mimeType": "text/markdown"
+      }
     ],
     "mac": {
       "category": "public.app-category.productivity",
@@ -147,28 +182,6 @@
         "dir",
         "dmg",
         "zip"
-      ],
-      "fileAssociations": [
-        {
-          "ext": "md",
-          "name": "Markdown 文稿",
-          "role": "Editor"
-        },
-        {
-          "ext": "markdown",
-          "name": "Markdown 文稿",
-          "role": "Editor"
-        },
-        {
-          "ext": "mdown",
-          "name": "Markdown 文稿",
-          "role": "Editor"
-        },
-        {
-          "ext": "mdtxt",
-          "name": "Markdown 文稿",
-          "role": "Editor"
-        }
       ],
       "extendInfo": {
         "CFBundleDisplayName": "墨流 InkFlow",

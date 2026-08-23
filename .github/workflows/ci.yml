@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  desktop:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: macOS · unit + syntax + smoke + pack
+            os: macos-14
+            pack: pack:mac
+            smoke: true
+          - label: Windows · unit + syntax + pack
+            os: windows-latest
+            pack: pack:win
+            smoke: false
+          - label: Linux · unit + syntax + pack
+            os: ubuntu-latest
+            pack: pack:linux
+            smoke: false
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Cache Electron downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: JavaScript syntax scan
+        run: npm run test:syntax
+
+      - name: Version consistency
+        run: npm run version:check
+
+      - name: Source functional smoke (44 assertions)
+        if: matrix.smoke
+        run: npm run test:smoke
+        env:
+          INKFLOW_SMOKE_TIMEOUT_MS: "240000"
+
+      - name: Build unpacked application
+        run: npm run ${{ matrix.pack }}
+
+      - name: Packaged functional smoke (44 assertions)
+        if: matrix.smoke
+        run: npm run test:packaged
+        env:
+          INKFLOW_SMOKE_TIMEOUT_MS: "240000"

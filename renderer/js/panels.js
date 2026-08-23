@@ -105,7 +105,7 @@ const FileTree = {
     this.cache.delete(P.dirname(src));
     this.cache.delete(destDir);
     this.expanded.add(destDir);
-    App.onPathRenamed(src, dest);
+    await App.onPathRenamed(src, dest);
     this.selected = dest;
     await this.render();
     const row = $(`.tree-row[data-path="${CSS.escape(dest)}"]`);
@@ -343,7 +343,7 @@ const FileTree = {
       const r = await ink.rename(entry.path, to);
       this.cache.delete(P.dirname(entry.path));
       if (r.ok) {
-        App.onPathRenamed(entry.path, to);
+        await App.onPathRenamed(entry.path, to);
         this.selected = to;
         await this.render();
         toast('已重命名');
@@ -362,15 +362,97 @@ const FileTree = {
   },
 
   async _delete(entry) {
-    // 关闭打开的标签
-    if (!entry.isDir) App.closeTabByPath(entry.path, true);
+    const target = typeof App._pathKey === 'function'
+      ? App._pathKey(entry.path)
+      : (P.normalize ? P.normalize(entry.path) : entry.path);
+    const affected = App.tabs.filter((tab) => {
+      if (!tab.path) return false;
+      const tabPath = typeof App._pathKey === 'function'
+        ? App._pathKey(tab.path)
+        : (P.normalize ? P.normalize(tab.path) : tab.path);
+      return tabPath === target || (entry.isDir && tabPath.startsWith(target + '/'));
+    });
+    const dirty = affected.filter((tab) => tab.dirty && tab.kind !== 'preview');
+    let dirtyChoice = 'none';
+    if (dirty.length) {
+      const choice = await App._confirm({
+        title: entry.isDir ? '删除文件夹' : '删除文件',
+        msg: entry.isDir
+          ? `该文件夹中有 ${dirty.length} 个打开的文稿尚未保存，是否先保存再移到废纸篓？`
+          : `“${entry.name}”有未保存的更改，是否先保存再移到废纸篓？`,
+        buttons: [
+          { label: '取消', value: 'cancel' },
+          { label: '不保存并删除', value: 'discard', danger: true },
+          { label: dirty.length > 1 ? '全部保存后删除' : '保存后删除', value: 'save', primary: true },
+        ],
+      });
+      if (choice === 'cancel') return false;
+      dirtyChoice = choice;
+      if (choice === 'save') {
+        for (const tab of dirty) {
+          const index = App.tabs.indexOf(tab);
+          if (index >= 0 && !(await App.save(index))) return false;
+          if (!App.tabs.includes(tab) || tab.dirty || tab.conflict) return false;
+        }
+      }
+    }
+
+    const valueOf = (tab) => typeof App._tabValue === 'function' ? App._tabValue(tab) : tab.cachedValue;
+    const deleteSnapshot = new Map(affected.map((tab) => [tab, valueOf(tab)]));
+
+    // 先冻结并等完在途写入，避免自动保存把刚移走的文件重新创建出来。
+    if (typeof App._suspendTabWrites === 'function') {
+      for (const tab of affected) await App._suspendTabWrites(tab);
+    }
+    const changedAfterConfirm = affected.some((tab) => !App.tabs.includes(tab)
+      || valueOf(tab) !== deleteSnapshot.get(tab));
+    const saveDidNotFinish = dirtyChoice === 'save' && affected.some((tab) => tab.dirty || tab.conflict);
+    if (changedAfterConfirm || saveDidNotFinish) {
+      if (typeof App._resumeTabWrites === 'function') affected.forEach((tab) => App._resumeTabWrites(tab));
+      toast('删除已取消：确认后文稿又有新的修改');
+      return false;
+    }
+
+    // 先移入废纸篓，成功后才强制关闭页签并清 recovery；失败时编辑现场完整保留。
     const r = await ink.trash(entry.path);
     if (r.ok) {
+      const changedDuringTrash = affected.some((tab) => !App.tabs.includes(tab)
+        || valueOf(tab) !== deleteSnapshot.get(tab));
+      if (changedDuringTrash) {
+        for (const tab of affected) {
+          if (!App.tabs.includes(tab)) continue;
+          tab.cachedValue = valueOf(tab);
+          if (typeof App._markExternalConflict === 'function') App._markExternalConflict(tab, 'deleted', null);
+          if (typeof App._resumeTabWrites === 'function') App._resumeTabWrites(tab);
+        }
+        this.cache.delete(P.dirname(entry.path));
+        await this.render();
+        toast('文件已移到废纸篓，但删除期间出现了新的修改；新内容已保留在页签中');
+        return false;
+      }
+      let tabsClosed = true;
+      for (const tab of affected) {
+        if (!(await App.closeTabByPath(tab.path, true))) tabsClosed = false;
+      }
       this.cache.delete(P.dirname(entry.path));
       await this.render();
+      if (!tabsClosed) {
+        for (const tab of affected) {
+          if (!App.tabs.includes(tab)) continue;
+          if (typeof App._markExternalConflict === 'function') App._markExternalConflict(tab, 'deleted', null);
+          if (typeof App._resumeTabWrites === 'function') App._resumeTabWrites(tab);
+        }
+        toast('文件已移到废纸篓，但恢复记录清理失败；相关页签已保留');
+        return false;
+      }
       toast('已移到废纸篓');
+      return true;
     } else {
+      if (typeof App._resumeTabWrites === 'function') {
+        affected.forEach((tab) => App._resumeTabWrites(tab));
+      }
       toast('删除失败：' + (r.error || ''));
+      return false;
     }
   },
 
@@ -524,3 +606,5 @@ const Outline = {
     if (scroller) scroller.addEventListener('scroll', () => this.trackActive(), { passive: true });
   },
 };
+
+if (typeof module === 'object' && module.exports) module.exports = { FileTree, Outline, CtxMenu };

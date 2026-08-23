@@ -4,6 +4,7 @@
 const Editor = {
   instances: new Map(), // key -> { key, host, vditor, tab, ready }
   activeKey: null,
+  _activationEpoch: 0,
 
   get ready() {
     const a = this._active();
@@ -33,18 +34,31 @@ const Editor = {
   // 切换到某标签的编辑器（不存在则懒创建；已存在则瞬间显隐，零重渲染）
   async activate(key, tab) {
     const prev = this._active();
-    if (prev && prev.key === key) {
+    if (prev && prev.key === key && prev.ready) {
       prev.tab = tab;
-      return;
+      return true;
     }
-    if (prev) {
+    const activationEpoch = ++this._activationEpoch;
+    if (prev && prev.key !== key) {
       const sc = this._scroller(prev.host);
       if (sc) prev.tab.scrollTop = sc.scrollTop;
       prev.host.classList.add('hidden');
     }
     this.activeKey = key;
     let inst = this.instances.get(key);
-    if (!inst) inst = await this._create(key, tab);
+    if (!inst) {
+      const readyPromise = this._create(key, tab);
+      inst = this.instances.get(key);
+      if (inst) inst._readyPromise = readyPromise;
+      inst = await readyPromise;
+    } else if (!inst.ready && inst._readyPromise) {
+      inst = await inst._readyPromise;
+    }
+    if (inst && inst._readyPromise) delete inst._readyPromise;
+    if (!inst || activationEpoch !== this._activationEpoch || this.activeKey !== key) {
+      if (inst) inst.host.classList.add('hidden');
+      return false;
+    }
     inst.tab = tab;
     inst.host.classList.remove('hidden');
     this._hideImgToolbar();
@@ -52,11 +66,14 @@ const Editor = {
     if (sc) sc.scrollTop = tab.scrollTop || 0;
     this._rescanImages(inst); // 切回时复扫图片：加载失败的自愈
     requestAnimationFrame(() => {
+      if (activationEpoch !== this._activationEpoch || this.activeKey !== key) return;
       try { inst.vditor.focus(); } catch (e) { /* 忽略 */ }
     });
+    return true;
   },
 
   clearActive() {
+    this._activationEpoch += 1;
     const prev = this._active();
     if (prev) prev.host.classList.add('hidden');
     this.activeKey = null;
@@ -66,6 +83,7 @@ const Editor = {
   destroy(key) {
     const inst = this.instances.get(key);
     if (!inst) return;
+    if (this.activeKey === key) this._activationEpoch += 1;
     try { inst.vditor.destroy(); } catch (e) { /* 忽略 */ }
     inst.host.remove();
     this.instances.delete(key);
@@ -141,7 +159,7 @@ const Editor = {
           toc: true,
           mark: true,
           footnotes: true,
-          sanitize: false,
+          sanitize: true,
           listStyle: true,
           paragraphBeginningSpace: true,
           gfmAutoLink: true,
@@ -192,13 +210,12 @@ const Editor = {
   _setupImgObserver(inst) {
     const fix = (img) => {
       const src = img.getAttribute('src');
-      if (!src || src.startsWith('http') || src.startsWith('data:') || src.startsWith('file:') || src.startsWith('//')) return;
+      if (!src || src.startsWith('http') || src.startsWith('data:')) return;
       if (img.dataset.inkFixed === src) return;
       const tab = inst.tab;
       if (!tab || !tab.path) return;
-      let rel;
-      try { rel = decodeURIComponent(src); } catch { rel = src; } // 文件名含 % 容错
-      const abs = P.resolve(P.dirname(tab.path), rel);
+      const abs = ExportRenderer.resolveLocalReferencePath(src, tab.path, P);
+      if (!abs) return;
       img.dataset.inkFixed = src;
       img.style.opacity = '';
       img.src = `${App.assetUrl}/img?path=${encodeURIComponent(abs)}`;
@@ -552,40 +569,34 @@ const Editor = {
     return true;
   },
 
-  // 获取导出用 HTML（mermaid 渲染为 SVG + 图片路径替换为 file:// 绝对路径）
-  async getExportHtml() {
+  // 获取导出用 HTML：富内容冻结为静态产物，最终消毒并解析本地图片路径。
+  async getExportHtml({ rasterizeSvg = false } = {}) {
     const tab = App.activeTab();
-    let html = this.vditor.getHTML();
-
-    // vditor.getHTML() 只转换语法不跑图表渲染器 —— 克隆到屏外容器补渲染 mermaid
-    if (html.includes('language-mermaid') && window.Vditor && Vditor.mermaidRender) {
-      const holder = document.createElement('div');
-      holder.style.cssText = 'position:fixed;left:-99999px;top:0;width:820px;visibility:hidden;';
-      holder.innerHTML = html;
-      document.body.appendChild(holder);
-      try {
-        Vditor.mermaidRender(holder, '../node_modules/vditor', 'default');
-        // mermaid.run 是异步的：轮询等 SVG 出现（超时兜底 4s）
-        const deadline = Date.now() + 4000;
-        while (Date.now() < deadline) {
-          const pending = holder.querySelector('.language-mermaid:not([data-processed="true"])');
-          if (!pending && holder.querySelector('.language-mermaid svg')) break;
-          await new Promise((r) => setTimeout(r, 120));
-        }
-        html = holder.innerHTML;
-      } catch { /* 渲染失败则保留原样 */ }
-      holder.remove();
-    }
-
-    if (tab && tab.path) {
-      const dir = P.dirname(tab.path);
-      html = html.replace(/(<img[^>]+src=")([^"]+)(")/g, (m, pre, src, post) => {
-        if (/^(https?|data|file):/i.test(src)) return m;
-        const abs = P.resolve(dir, decodeURIComponent(src));
-        return `${pre}file://${encodeURI(abs)}${post}`;
-      });
-    }
-    return html;
+    if (!this.vditor || !tab || tab.kind === 'preview') throw new Error('当前页签不是可导出的文稿');
+    let html = ExportRenderer.stageLocalImages(this.vditor.getHTML(), tab.path, document);
+    html = await ExportRenderer.renderHtml({
+      html,
+      documentApi: document,
+      windowApi: window,
+      VditorApi: window.Vditor,
+      sanitizeHtml: ExportSafety.sanitizeHtml,
+      cdn: '../node_modules/vditor',
+      theme: document.body.dataset.theme === 'dark' ? 'dark' : 'classic',
+      math: { inlineDigit: true, engine: 'KaTeX', macros: {} },
+      rasterizeSvg,
+      documentPath: tab.path,
+      pathApi: P,
+      loadSvgAsset: typeof ink.readSvgAsset === 'function' ? (file) => ink.readSvgAsset(file) : null,
+      hljs: {
+        enable: true,
+        style: document.body.dataset.theme === 'dark' ? 'atom-one-dark' : 'github',
+        lineNumber: false,
+      },
+    });
+    return ExportSafety.sanitizeHtml(
+      ExportRenderer.rewriteLocalImages(html, tab && tab.path, P, document),
+      { allowFileImages: true },
+    );
   },
 
   stats() {
@@ -596,3 +607,5 @@ const Editor = {
     return { words, chars, minutes };
   },
 };
+
+if (typeof module === 'object' && module.exports) module.exports = Editor;

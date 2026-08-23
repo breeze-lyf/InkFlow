@@ -1,154 +1,194 @@
-# 墨流 InkFlow · 交接文档（HANDOFF）
+# 墨流 InkFlow · 维护交接
 
-> 写给下一位开发者（或三个月后失忆的自己）。
-> 读完这份文档 + 跑一遍测试，你就拥有了维护本项目的全部上下文。
-> 最后更新：2026-07-28（v1.0.0 发布后）
+> 面向下一位维护者。最后更新：2026-08-23（v1.0.4）
 
----
+## 1. 当前基线
 
-## 1. 这是什么
+墨流是本地优先的桌面 Markdown 编辑器：Electron 43、Vditor 3.11.3 IR、Vanilla JavaScript。产品定位是 **Typora 的即时写感 + VSCode 式文档库工作流**。
 
-macOS 桌面 Markdown 编辑器。Electron 33 + Vditor 3.10（IR 即时渲染）+ Vanilla JS。
-定位：**Typora 的写感 + VSCode 的工作流**（文档库/多标签/命令面板）。
+- 仓库：<https://github.com/breeze-lyf/InkFlow>
+- 最新发布：v1.0.4（macOS Apple Silicon，DMG / ZIP，未签名公证）
+- 功能冒烟基线：**44/44**
+- 正式导出：PDF、Word、PNG 长图、自包含 HTML
+- Windows / Linux：有构建配置与 CI，不代表实体机器发布验收已经完成
 
-- 仓库：<https://github.com/breeze-lyf/InkFlow>（Public）
-- 最新发布：v1.0.0（DMG/ZIP，Apple Silicon，未公证）
-- 测试基线：**功能回归 27/27**（每次改动后必须保持全绿）
+术语先读 [CONTEXT.md](CONTEXT.md)，完整边界见 [架构概览](docs/architecture/overview.md) 和 [数据安全](docs/data-safety.md)。
 
 ## 2. 三分钟上手
 
 ```bash
-npm install                 # 只装 vditor + html-to-docx + electron-builder
-npm start                   # 开发启动（需本地 Electron，见下）
-npm run dist                # 打包 DMG + ZIP → dist/
+npm ci
+npm start
 
-# 测试（核心工作流，每次改完必跑）
-SMOKE=1 SMOKE_FUNC=1 ./node_modules/.bin/electron --no-sandbox --disable-gpu \
-  --user-data-dir=/tmp/inkflow-dev-data .          # 功能回归 27 项
-SMOKE=1 SMOKE_SHOTS=light,dark ./node_modules/.bin/electron --no-sandbox \
-  --disable-gpu --user-data-dir=/tmp/inkflow-dev-data .   # 视觉冒烟截图
+npm test                 # 单元测试 + JavaScript 语法扫描
+npm run test:smoke       # 源码 Electron 功能冒烟，严格核对 44/44
+npm run verify           # test + 版本一致性 + 源码功能冒烟
 
-# 打包产物也要验（asar 环境与开发环境行为不同！）
-SMOKE=1 SMOKE_FUNC=1 env -u NODE_OPTIONS -u ELECTRON_RUN_AS_NODE \
-  "dist/mac-arm64/墨流.app/Contents/MacOS/墨流" --no-sandbox --disable-gpu \
-  --user-data-dir=/tmp/inkflow-pack-data
+npm run pack:mac         # 当前平台 unpacked 应用
+npm run test:packaged    # 自动定位 dist/ 当前平台应用，严格核对 44/44
+npm run dist             # macOS DMG + ZIP
 ```
 
-**环境注意**：本机 shell 的 cwd 会漂移，所有命令前加 `cd /Users/breeze/Dev/markdown/inkflow`；
-`env -u NODE_OPTIONS` 必须带上，否则 Electron 会以 Node 模式静默退出。
+不要手写 `SMOKE=1 electron ...` 作为发布证据。`scripts/run-smoke.js` 会：
+
+- 为每次运行建立独立临时 user-data；
+- 清除 `NODE_OPTIONS`、`ELECTRON_RUN_AS_NODE` 和残留测试变量；
+- 同时检查进程退出码与 `44/44 passed`；
+- 超时终止并删除临时目录；
+- 对打包测试支持 `INKFLOW_PACKAGED_EXECUTABLE=/绝对路径` 显式指定程序。
 
 ## 3. 架构地图
 
-```
-main/                  Electron 主进程
-├── main.js            窗口/IPC/冒烟测试编排/runFuncSmoke(27 断言)/fs 监听
-├── preload.js         contextBridge 桥（ink.* API）
-├── menu.js            原生中文菜单（视图菜单 radio 读 settings）
-├── store.js           JSON 持久化（settings/recent，原子写）
-└── server.js          本地资源服务（/img?path= 喂图片，仅媒体扩展名）
-
-renderer/
-├── index.html         全部 DOM（侧栏/页栏/编辑区/欢迎页/弹窗）
-├── css/themes.css     纸/墨设计令牌（全部视觉从这里派生）
-├── css/app.css        应用壳样式
-├── css/vditor-custom.css  编辑器深度定制（前缀 .ink-editor）
+```text
+renderer/                     界面与编辑状态
+├── index.html                应用壳、设置与确认弹窗
+├── css/                      纸/墨主题、布局、Vditor 内容主题
 └── js/
-   ├── app.js          编排中心：标签/设置/命令/快捷键/菜单分发/会话
-   ├── editor.js       编辑器实例池（核心！见 §4.1）
-   ├── panels.js       文件树（选中态/缓存/无感刷新）+ 大纲 + 右键菜单
-   ├── overlay.js      快速打开/命令面板
-   ├── exporter.js     PDF/Word/PNG/HTML 导出（渲染端部分）
-   └── utils.js        el/$/$$/toast/防抖节流/P(路径)/countWords
+    ├── app.js                页签、会话、CAS 保存、恢复与菜单编排
+    ├── document-safety.js    外部修改三方决策规则
+    ├── editor.js             每页签一个 Vditor 实例
+    ├── panels.js             文件树、大纲、右键菜单
+    ├── overlay.js            快速打开与命令面板
+    ├── exporter.js           导出内容准备
+    └── utils.js              路径、DOM 与通用工具
+
+main/                         系统能力与信任边界
+├── main.js                   应用生命周期与模块编排
+├── preload.js                window.ink 白名单桥
+├── menu.js                   原生菜单
+├── store.js                  原子 JSON 持久化
+├── recovery-store.js         userData/recovery.json 草稿存储
+├── document-files.js         文稿 CAS 与原子替换
+├── directory-files.js        大目录异步读取与遍历
+├── file-watch.js             打开文稿的单文件监听注册表
+├── path-grants.js            文件/目录授权边界
+├── ipc-security.js           IPC 来源校验
+├── network-policy.js         阻断渲染进程任意网络与本地文件请求
+├── html-sanitizer.js         基于真实 HTML 解析器的导出净化
+├── export-security.js        导出图片验证、预算与 data URL 内联
+├── svg-assets.js             授权 SVG 读取与严格净化
+├── open-requests.js          Finder/命令行/二次启动打开请求归一化
+├── css-assets.js             导出 CSS 白名单
+├── server.js                 带启动令牌的本地资源服务
+└── menu.js                   原生菜单
+
+scripts/                      单元、语法、冒烟、版本与发布检查
+tests/                        独立规则测试
+.github/workflows/ci.yml      三平台持续集成
 ```
 
-**数据流**：渲染进程不碰 fs —— 一切经 `ink.*`（preload 白名单 API）→ IPC → 主进程。
+核心数据流：`renderer → window.ink → preload 白名单 → IPC → main → 文件系统/导出/资源服务`。渲染进程不得绕过该链路访问 Node 能力。
 
-## 4. 核心设计决策（改之前先理解为什么）
+## 4. 不可破坏的设计约束
 
-### 4.1 编辑器实例池（editor.js）
-每个标签页持有独立 Vditor 实例，懒创建；切换 = 显隐宿主 div，**零重渲染**（光标/滚动/撤销历史全保留）。
-- 宿主结构：`#editor-hosts > .editor-host.ink-editor[data-key]`；活跃宿主 = 无 `.hidden`
-- 选择器规则：查当前编辑器一律 `.editor-host:not(.hidden) ...`，全局 `.vditor-ir` 会命中隐藏实例
-- 每实例独立绑定：图片观察器 / 链接拦截 / 大纲滚动 / input 回调（携带实例 key）
-- 关标签必须 `Editor.destroy(key)`；重命名/另存必须 `Editor.rekey()`
+### 4.1 编辑器实例池
 
-### 4.2 滚动容器与页面宽度（vditor-custom.css）
-滚动容器 `.vditor-ir > .vditor-reset`（vditor 内部 PRE）保持**全宽**（滚动条贴窗口右缘），
-文本列用 `padding: max(28px, calc((100% - var(--page-width))/2))` 居中。
-`--page-width` 正常 780 / 超宽 1120，切宽度只改 CSS 变量。
-**禁区**：`.vditor-ir` 底部不加 padding（会挤掉 PRE 滚动容器高度，血泪教训）。
+每个可编辑页签持有一个独立 Vditor 实例，切换页签只切宿主显隐，保留光标、滚动与撤销历史。
 
-### 4.3 主题系统
-CSS 变量令牌（themes.css）：`body[data-theme]` 切换 → 应用壳 + vditor `setTheme` + 内容主题
-（inkflow-light/dark.css，导出也复用）。全部 UI 只引用变量，不写死颜色。
+- 当前实例选择器必须限定 `.editor-host:not(.hidden)`。
+- 关页签调用 `Editor.destroy(key)`。
+- 重命名或另存后调用 `Editor.rekey(from, to)`。
+- 定时器与恢复记录必须按页签键隔离，不能用一个全局计时器管理所有文稿。
 
-### 4.4 文件树（panels.js）
-- `FileTree.cache`（目录缓存）：**任何写操作后必须 `cache.delete(父目录)`**，否则"创建了却看不到"
-- `FileTree.selected`：新建文件落在选中目录（文件则取父目录）
-- 双击守卫：双击派生两次 click，`e.detail > 1` 分支忽略（文件夹防"展开又收起"，图片防"插两份"）
-- `softRefresh()`：fs.watch 触发；`_editing`（行内命名中）时让路
+### 4.2 文件与恢复
 
-### 4.5 设置与菜单
-所有设置持久化到 `settings.json`（主进程 Store，原子写）。菜单 radio/checkbox 的勾选态在
-`buildMenu` 时从 settings 读 —— `settings:set` IPC 会 `refreshMenu()` 自动同步。
+- `savedValue` 是编辑器规范化基线；`diskValue` 是精确磁盘原文和 CAS 基线。不能用前者代替后者做覆盖检查。
+- 恢复草稿按页签以 600ms leading + trailing 节流写入 `userData/recovery.json`，字段为 `key/path/name/content/savedValue/diskValue/updatedAt`。
+- 保存失败必须保持脏状态并给出用户可见提示。
+- 恢复草稿只用于异常退出保护；成功保存或明确放弃后清理。
+- 外部修改采用磁盘、当前内容、保存基线三方比较；双方都变化或磁盘删除时暂停自动保存，并提供载入磁盘版、当前内容另存为、明确覆盖三种动作。
+- 设置、最近项目与恢复数据位于 Electron `userData`，不写进文档库。
 
-### 4.6 快捷键分配原则
-`⌘1..6` 标题 / `⌘0` 正文（Typora 肌肉记忆）；标签切换用 `⌥1..9`（用 `e.code` 判断，
-`⌥` 会产生特殊字符导致 `e.key` 不可靠）；格式类快捷键注册在原生菜单（⌘ 组合由菜单捕获）。
+### 4.3 路径授权与资源服务
 
-## 5. 测试体系（本项目的护城河）
+- preload 只暴露业务化窄接口，不暴露 `ipcRenderer` 或通用文件 API。
+- 主窗口与导出窗口保持 `sandbox: true`、`contextIsolation: true`、`nodeIntegration: false`。
+- 主进程对每个文件动作重新验证类型、路径和授权范围，不能信任 renderer 参数。
+- 路径能力默认拒绝；系统对话框、Finder `open-file`、有效 session/recent/recovery、真实 `File` 拖放和内置 samples 是授权来源。
+- 路径规范化必须保留 realpath / 最近存在祖先逻辑，阻断 `..` 与符号链接逃逸；文件动作继续区分 `read/write/asset`。
+- 文档库 watcher 负责树刷新；单文件 watcher 覆盖所有可编辑页签（包括文档库外文件）并在原子替换后重挂，预览页签不注册。
+- 资源服务只监听回环地址，URL 带每次启动随机 256-bit 令牌，只允许 `GET` / `HEAD` 和白名单媒体类型，不开放 `CORS *`，保留 `nosniff` / `no-referrer`。
+- CSS 读取只能命中应用内允许的内容主题，不能成为任意路径读取入口。
 
-| 模式 | 用途 |
-|---|---|
-| `SMOKE=1` | 启动演示文档 + 截图（`SMOKE_SHOTS=light,dark,welcome,wide,sidebar-off,outline,scroll-N`） |
-| `SMOKE_FUNC=1` | runFuncSmoke：27 项断言（编辑/自动保存/导出/树/快捷键/实例池…） |
-| `SMOKE_PROBE=1` | 布局探针：打印关键元素 getBoundingClientRect（视觉验证用） |
+### 4.4 文件树与大目录
 
-**测试钩子**：`INKFLOW_TEST_SAVEPATH=/tmp/x.pdf` 跳过保存对话框（导出管线可无头端到端验证）。
-**写文件的树测试在 samples 临时副本上跑**（`tmpDir/samples`），防仓库污染 + asar 只读。
+- 文件写操作后使父目录缓存失效，否则会出现“创建成功但树上看不到”。
+- `fs.watch` 事件需要防抖并让路于行内重命名。
+- 大目录遍历不得在主进程使用无上限同步深搜；保留异步、可让出事件循环的路径。
+- 双击会派生两次 click，文件夹展开与图片插入都要保留重复事件守卫。
 
-## 6. 发布流程（已踩平的坑都标了）
+### 4.5 导出
+
+- 导出样式来自产品内容主题，不能复制出另一套长期漂移的主题。
+- 相对图片先解析为授权本地资源，再按目标格式内联或加载。
+- 导出 HTML 在进入主进程前移除脚本、主动嵌入、内联事件与危险 URL，并转义文稿元数据。
+- 修改复杂渲染时至少覆盖 Mermaid、ECharts、Markmap、KaTeX、表格和长文分页/长图高度。
+- 开发环境通过不等于 asar 通过；核心导出变化必须复跑打包应用冒烟。
+
+## 5. 工程门禁
+
+| 命令 | 作用 |
+| --- | --- |
+| `npm test` | 单元测试与全部项目 JavaScript 语法扫描 |
+| `npm run test:unit` | Node 内置 test runner；自动发现 `tests/` 与 `scripts/tests/` |
+| `npm run test:syntax` | 用当前 Node 对 main、renderer、scripts、tests 执行 `--check` |
+| `npm run test:smoke` | 源码功能冒烟，必须恰好 `44/44` |
+| `npm run test:packaged` | 当前平台 unpacked 应用功能冒烟 |
+| `npm run version:check` | package、README、HANDOFF、site、docs 公开版本一致性 |
+| `npm run artifacts:check` | macOS DMG / ZIP 包络、大小、版本和更新元数据 |
+| `npm run verify` | `test` + `version:check` + `test:smoke` |
+| `npm run release:check` | 干净工作树、版本、标签与产物的发布前总检 |
+
+CI 使用 Node 22 与 `npm ci`：
+
+- macOS：unit、syntax、version、源码 44 项 smoke、mac unpacked build；
+- Windows：unit、syntax、version、Windows unpacked build；
+- Linux：unit、syntax、version、Linux unpacked build。
+
+CI 构建结果只证明依赖可安装、测试可运行、目标包可生成，不得写成 Windows / Linux 实体机器验收。
+
+## 6. 发布流程
+
+完整逐项清单见 [docs/release-checklist.md](docs/release-checklist.md)。最短路径：
 
 ```bash
-npm run dist                                  # 1. 打包
-git tag -a v1.x.x -m "说明" && git push origin v1.x.x   # 2. 标签
-gh release create v1.x.x dist/InkFlow-*.dmg dist/InkFlow-*-mac.zip --notes-file notes.md
+# 如需升版；只同步本地文件，不打标签、不上传
+npm run release:sync -- 1.0.4
+npm install --package-lock-only --ignore-scripts
+
+npm ci
+npm run verify
+npm run dist
+
+# 标签创建并提交后，在干净工作树执行
+npm run release:check
 ```
 
-- **资产文件名必须 ASCII**（中文名经 GitHub 上传会被剥成乱码，教训 v1.0.0）
-- gh 的 GraphQL 端点在本网络常 TLS 超时 → 用 `gh api`（REST）+ 重试循环；系统代理 `127.0.0.1:7897`
-- 未公证提示已写进 README 与 Release notes（`xattr -dr com.apple.quarantine`）
+`release:sync` 的 `package.json` 是版本源，会同步 README、HANDOFF、`site/index.html` 与 `docs/index.html`。它故意不发布，也不代替锁文件审查。
 
-## 7. 血泪坑清单（别再踩）
+## 7. 已知坑
 
-1. **Electron ≥32 移除了 `File.path`** → 拖放必须 `webUtils.getPathForFile`（preload 桥接）
-2. **`showSaveDialog` 返回 `{canceled, filePath}`**，不是字符串（旧教程是字符串，全踩过）
-3. **`fs.cpSync` 不被 asar 补丁覆盖** → asar 内复制用手工递归 `readdirSync + copyFileSync`
-4. **electron-builder 自动收集全部 dependencies** → `files` 白名单失效，要 `!排除`（vditor 引擎裁剪靠这个）
-5. **vditor 空文档 `getValue()` 返回 `'\n'`** → 脏判断用 `_contentDirty`（全空白≡空串）
-6. **vditor 标题热键是"设置"不是"切换"**；工具栏按钮连续点会因内部 range 书签失效而无效 →
-   ⌘0 切正文：先 range 重置到块首再点按钮（editor.js `heading()`）
-7. **`executeJavaScript` 里重复 `const` 声明 = SyntaxError** → UnhandledPromiseRejection → 进程挂起不退
-8. **render() 重建 DOM 后旧引用全部失效**（测试断言要重新 query）
-9. **`img.onerror` 一次定死 = "图片突然不显示"** → 现在 1.2s 重试 + 激活时 `_rescanImages` 自愈
-10. **iCloud 会驱逐 `~/Documents` 里的图片文件** → 用户报"图片消失"先查云朵图标
+1. Electron 32+ 移除了 `File.path`；拖放路径必须经 preload 中的 `webUtils.getPathForFile`。
+2. `showSaveDialog` 返回 `{ canceled, filePath }`，不是字符串。
+3. asar 内复制不要依赖未经验证的 `fs.cpSync` 行为；示例复制需要打包后回归。
+4. Vditor 空文稿可能返回换行符；脏判断要使用统一内容比较规则。
+5. 查找当前编辑器时，全局 `.vditor-ir` 会命中隐藏实例。
+6. `executeJavaScript` 中的异常会让冒烟流程挂起；测试运行器有超时，但根因仍需修复。
+7. iCloud 可能驱逐 Documents 内的媒体；“图片消失”先确认文件是否仍在本地。
+8. `package-lock.json` 的依赖树是 CI 安装依据；升级依赖必须同步并审查锁文件。
 
-## 8. 已知待办 / 可以做
+## 8. 仍需外部条件的发布门
 
-- [ ] 页签拖拽排序（`#tabs` 加 HTML5 DnD）
-- [ ] 环境控制条主题按钮与系统外观实时联动（边缘场景：设置面板改主题后 seg 高亮不刷新）
-- [ ] markmap（思维导图）按需恢复（从打包排除清单去掉即可，0.8MB）
-- [ ] 用户真实 Mac 实机验证（本机全部测试通过，但无人点过真按钮）
-- [ ] v2.0 远期：Tauri 评估（10-20MB 体积诱惑 vs 主进程重写成本）
-- [ ] Apple 开发者账号后：签名 + 公证（`notarytool`），去掉 xattr 指引
+- [ ] Apple 开发者账号、证书与公证服务：完成签名、公证后才能移除 `xattr` 指引。
+- [ ] Windows / Linux 实体机器：完成安装、文件关联、快捷键、路径、导出和卸载验收后，才能标记对应平台正式发布。
 
-## 9. 用户环境速记
+除此之外，发现产品或工程缺口应作为正常缺陷进入测试与修复，不在此长期堆“也许以后做”的愿望清单。
 
-- 用户文档库：`~/Documents/墨流示例`（首启从 `samples/` 复制）
-- 设置：`~/Library/Application Support/墨流/settings.json`（userData）
-- 用户偏好：中文交流、深度技术解释、先给方案再动手、视觉验收要求高
-- 本机网络：GitHub SSH 通，API 走代理 `127.0.0.1:7897`（env 里旧端口 65314 已失效）
+## 9. 本地数据位置
 
----
+- 首启示例：系统“文档”目录下的 `墨流示例`
+- 设置与最近项目：Electron `userData`
+- 恢复草稿：Electron `userData/recovery.json`
+- 功能冒烟：系统临时目录；运行结束自动清理
 
-*此文档随代码演进。改了架构、流程、约定，请同步更新它。*
+改了架构、数据安全、测试数量、发布命令或公开版本时，必须在同一变更中同步本文件。

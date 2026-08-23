@@ -4,7 +4,7 @@
 
 为写作而生的 Markdown 编辑器 —— Typora 式即时渲染 × 现代工作流
 
-macOS · Windows · Linux · Electron 33 · Vditor IR · MIT License
+macOS · Windows · Linux · Electron 43 · Vditor IR · MIT License
 
 </div>
 
@@ -22,6 +22,7 @@ Typora 把即时渲染做到了极致，但文件管理、标签页、命令面�
 
 - **即时渲染**：基于 Vditor IR 模式，Markdown 标记输入即刻排版，无预览切换、无双栏
 - **编辑器实例池**：每个标签页持有独立编辑器实例，切换**零重渲染**——光标、滚动位置、撤销历史原样保留
+- **页签可排序**：拖拽页签，或用 `Alt+Shift+←/→` 精确调整顺序；重启后保持
 - **块级格式快捷键**：`⌘1`~`⌘6` 秒切标题、`⌘0` 恢复正文，与 Typora 肌肉记忆一致
 - **专注 & 打字机**：`⇧⌘F` 淡化非当前段落；`⇧⌘T` 光标行始终居中
 
@@ -56,8 +57,10 @@ Typora 把即时渲染做到了极致，但文件管理、标签页、命令面�
 
 - 输入停顿 0.9s 自动落盘，**原子写入**防半截文件
 - 未保存更改在关标签、退出时逐层确认
-- 重启自动恢复文档库、标签页、侧栏宽度与界面状态
-- **22 项自动化功能回归**：编辑、自动保存、导出管线、树交互、格式快捷键全部有断言
+- 异常退出自动恢复未命名与未落盘内容；成功保存或明确放弃后自动清理恢复草稿
+- 外部程序改动同一文稿时三方比对；冲突时暂停自动保存，由你选择载入、另存或明确覆盖
+- 重启自动恢复文档库、页签顺序、侧栏宽度与界面状态
+- **44 项自动化功能回归**：编辑、自动保存、单文件图片权限、富内容安全导出、树交互、格式快捷键全部有断言
 
 ## 格式支持
 
@@ -70,7 +73,7 @@ Typora 把即时渲染做到了极致，但文件管理、标签页、命令面�
 | 功能 | 快捷键 | 功能 | 快捷键 |
 | --- | --- | --- | --- |
 | 标题 1~6 级 | `⌘1`~`⌘6` | 正文（取消标题） | `⌘0` |
-| 引用 / 无序 / 有序 / 任务 | `⌥⌘Q` `⌥⌘U` `⌥⌘O` `⌥⌘X` | 切换标签 | `⌥1`~`⌥9` |
+| 引用 / 无序 / 有序 / 任务 | `⌥⌘Q` `⌥⌘U` `⌥⌘O` `⌥⌘X` | 切换 / 排序页签 | `⌥1`~`⌥9` / `⌥⇧←` `⌥⇧→` |
 | 加粗 / 斜体 / 行内代码 / 删除线 | `⌘B` `⌘I` `⌘E` `⇧⌘X` | 专注 / 打字机 | `⇧⌘F` `⇧⌘T` |
 | 新建 / 打开 / 保存 | `⌘N` `⌘O` `⌘S` | 快速打开 / 命令面板 | `⌘P` `⇧⌘P` |
 | 打开文件夹 | `⇧⌘O` | 侧边栏 / 大纲 | `⇧⌘L` `⇧⌘J` |
@@ -81,7 +84,7 @@ Typora 把即时渲染做到了极致，但文件管理、标签页、命令面�
 
 官网（含下载入口）：**[inkflow.yufeng.fun](https://inkflow.yufeng.fun)**
 
-当前发布 **macOS (Apple Silicon)** 版本，从 [Releases](https://github.com/breeze-lyf/InkFlow/releases) 下载 `墨流-x.y.z-arm64.dmg`，拖入「应用程序」即可。Windows / Linux 版本可联系作者打包。
+当前发布 **v1.0.4**，提供 **macOS (Apple Silicon)** 安装包。从 [Releases](https://github.com/breeze-lyf/InkFlow/releases) 下载 `墨流-x.y.z-arm64.dmg`，拖入「应用程序」即可。Windows / Linux 已纳入持续构建，但尚不等同于对应实体机器上的发布验收。
 
 首次启动自动在文档目录创建「墨流示例」库，30 秒看完全部能力。
 
@@ -93,25 +96,30 @@ Typora 把即时渲染做到了极致，但文件管理、标签页、命令面�
 ```bash
 git clone git@github.com:breeze-lyf/InkFlow.git
 cd InkFlow
-npm install
+npm ci
 npm start            # 开发模式
+npm test             # 单元测试 + JavaScript 语法扫描
+npm run verify       # 再加版本一致性 + 源码功能冒烟
 npm run dist         # 打包 macOS (DMG + ZIP)
 npm run dist:win     # 打包 Windows (NSIS 安装包 + ZIP)
 npm run dist:linux   # 打包 Linux (AppImage + ZIP)
 npm run dist:all     # 一次打包三平台
 ```
 
-> 跨平台打包无需对应系统：在 Mac 上即可产出 Windows 与 Linux 安装包（electron-builder 交叉构建）。
+> GitHub Actions 会在 macOS、Windows、Linux 各自完成依赖安装、单元测试、语法扫描和本平台 unpacked 构建；macOS 额外执行源码功能冒烟。构建成功不替代 Windows / Linux 实体机器验收。
 
 ## 测试
 
 ```bash
-# 功能回归（22 项断言：编辑/自动保存/导出管线/文件树/快捷键…）
-SMOKE=1 SMOKE_FUNC=1 ./node_modules/.bin/electron --no-sandbox .
-
-# 视觉冒烟（自动截图到 assets/screenshots/）
-SMOKE=1 SMOKE_SHOTS=light,dark,welcome ./node_modules/.bin/electron --no-sandbox .
+npm test                 # 单元测试 + 全仓 JavaScript 语法扫描
+npm run test:smoke       # 源码功能冒烟，必须得到 44/44
+npm run test:packaged    # 自动定位 dist/ 下当前平台应用并复跑 44 项
+npm run version:check    # package / README / HANDOFF / 官网版本一致性
+npm run artifacts:check  # DMG / ZIP 结构与版本检查
+npm run verify           # test + version:check + test:smoke
 ```
+
+功能冒烟运行器会为每次执行创建独立的临时 user-data，清除 `NODE_OPTIONS` / `ELECTRON_RUN_AS_NODE`，并在结束后删除临时目录。它会同时检查退出码和 `44/44 passed` 汇总，避免 Electron 提前退出被误判为成功。
 
 ## 项目结构
 
@@ -122,8 +130,13 @@ inkflow/
 │   └── js/        # app(标签/命令) editor(实例池) panels(树/大纲) overlay exporter
 ├── samples/       # 内置示例文档（首启复制到系统文档目录/墨流示例）
 ├── assets/        # 品牌资产（水墨标/横标/图标）与截图
-└── scripts/       # 品牌资产加工脚本
+├── scripts/       # 测试、版本、发布检查与品牌资产脚本
+├── tests/         # 可脱离 Electron UI 运行的单元测试
+├── docs/          # 官网镜像与维护文档
+└── .github/       # 三平台持续集成
 ```
+
+维护入口： [架构概览](docs/architecture/overview.md) · [数据安全](docs/data-safety.md) · [依赖升级政策](docs/dependency-policy.md) · [发布清单](docs/release-checklist.md)。统一领域词汇见 [CONTEXT.md](CONTEXT.md)。
 
 ## 致谢与技术栈
 

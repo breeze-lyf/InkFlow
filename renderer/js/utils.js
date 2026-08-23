@@ -36,11 +36,18 @@ const P = {
   basename(p) { return P.normalize(p).split('/').pop() || p; },
   dirname(p) {
     const n = P.normalize(p);
-    const i = n.lastIndexOf('/');
+    const uncRoot = n && n.match(/^(\/\/[^/]+\/[^/]+)(?:\/|$)/);
+    const driveRoot = n && n.match(/^([a-zA-Z]:\/)(?:|.*)$/);
+    const trimmed = n && n.length > 1 ? n.replace(/\/+$/, '') : n;
+    if (uncRoot && trimmed === uncRoot[1]) return uncRoot[1];
+    if (driveRoot && trimmed === driveRoot[1].replace(/\/$/, '')) return driveRoot[1];
+    const i = trimmed.lastIndexOf('/');
     if (i < 0) return n;
     if (i === 0) return '/';
-    // 保留 Windows 盘符根（C:/ 的目录是 C:/ 本身）
-    return n.slice(0, i) || '/';
+    const result = trimmed.slice(0, i) || '/';
+    if (uncRoot && result.length < uncRoot[1].length) return uncRoot[1];
+    if (driveRoot && result === driveRoot[1].slice(0, -1)) return driveRoot[1];
+    return result;
   },
   extname(p) {
     const b = P.basename(p);
@@ -48,31 +55,38 @@ const P = {
     return i > 0 ? b.slice(i) : '';
   },
   join(...parts) {
-    return P.normalize(parts.join('/')).replace(/([^:])\/+/g, '$1/');
+    const raw = P.normalize(parts.filter((part) => part !== '' && part != null).join('/'));
+    const unc = raw.startsWith('//');
+    const collapsed = raw.replace(/\/+/g, '/');
+    return unc ? `//${collapsed.replace(/^\/+/, '')}` : collapsed;
   },
   stem(p) {
     const b = P.basename(p);
     const i = b.lastIndexOf('.');
     return i > 0 ? b.slice(0, i) : b;
   },
-  // 判断绝对路径：POSIX /x、Windows C:/x 或 C:\x
+  // 判断绝对路径：POSIX /x、Windows C:/x 或 UNC //server/share
   isAbsolute(p) {
-    return /^([a-zA-Z]:[\\/]|\/)/.test(p);
+    return /^(?:[a-zA-Z]:[\\/]|[\\/]{1,2})/.test(p);
   },
   // 解析相对路径（相对 baseDir），处理 ./ ../
   resolve(baseDir, rel) {
     const nrel = P.normalize(rel);
     if (P.isAbsolute(nrel)) return nrel;
     const nbase = P.normalize(baseDir);
-    const m = nbase.match(/^([a-zA-Z]:)?\//);
-    const prefix = m && m[1] ? m[1] : '';
-    const stack = nbase.replace(/^[a-zA-Z]:\//, '/').split('/').filter(Boolean);
+    const unc = nbase.match(/^(\/\/[^/]+\/[^/]+)(?:\/|$)/);
+    const drive = nbase.match(/^([a-zA-Z]:)\//);
+    const root = unc ? unc[1] : (drive ? `${drive[1]}/` : (nbase.startsWith('/') ? '/' : ''));
+    const rest = unc ? nbase.slice(unc[1].length) : (drive ? nbase.slice(drive[0].length) : nbase);
+    const stack = rest.split('/').filter(Boolean);
     for (const seg of nrel.split('/')) {
       if (seg === '' || seg === '.') continue;
       if (seg === '..') stack.pop();
       else stack.push(seg);
     }
-    return prefix + '/' + stack.join('/');
+    if (unc) return `${root}${stack.length ? '/' : ''}${stack.join('/')}`;
+    if (drive) return `${root}${stack.join('/')}`;
+    return `${root || '/'}${root === '/' ? '' : '/'}${stack.join('/')}`;
   },
 };
 

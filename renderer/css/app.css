@@ -347,6 +347,23 @@ body[data-sidebar="hidden"] #btn-sidebar-toggle { margin-left: 2px; }
   transition: background .12s var(--ease), color .12s var(--ease);
 }
 .tab:hover { color: var(--text-1); background: var(--bg-sidebar-hover); }
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.tab.dragging { opacity: .45; }
+.tab.drop-before::before, .tab.drop-after::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  pointer-events: none;
+}
+.tab.drop-before::before { left: -2px; }
+.tab.drop-after::after { right: -2px; }
 /* 激活页签：与编辑区同色并向下延伸 1px 盖住分隔线，形成"浮起卡片"的一体感 */
 .tab.active {
   background: var(--bg-editor);
@@ -363,6 +380,7 @@ body[data-sidebar="hidden"] #btn-sidebar-toggle { margin-left: 2px; }
   display: none;
 }
 .tab.dirty .tab-dirty { display: block; }
+.tab.conflict .tab-dirty { display: block; background: var(--danger); }
 .tab-close {
   width: 18px; height: 18px;
   border: none; background: transparent;
@@ -378,6 +396,25 @@ body[data-sidebar="hidden"] #btn-sidebar-toggle { margin-left: 2px; }
 }
 .tab:hover .tab-close, .tab.active .tab-close { opacity: 1; }
 .tab-close:hover { background: var(--bg-sidebar-hover); color: var(--text-1); }
+
+/* ---- 文件外部修改 / 删除冲突 ---- */
+#file-conflict-bar {
+  min-height: 42px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 12px;
+  color: var(--text-1);
+  background: color-mix(in srgb, var(--danger) 9%, var(--bg-editor));
+  border-bottom: 1px solid color-mix(in srgb, var(--danger) 28%, var(--border));
+  font-size: 12.5px;
+}
+#file-conflict-bar.hidden { display: none; }
+.conflict-mark { color: var(--danger); font-size: 15px; }
+.conflict-message { flex: 1; min-width: 120px; }
+.conflict-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.conflict-actions .btn { padding: 5px 9px; font-size: 11.5px; }
 
 #editor-area { flex: 1; position: relative; min-height: 0; background: var(--bg-editor); }
 #editor-hosts { height: 100%; }

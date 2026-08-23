@@ -7,6 +7,7 @@ const Overlay = {
   filtered: [],
   selected: 0,
   _fileCache: null,
+  _requestSeq: 0,
 
   init() {
     $('#overlay-mask').addEventListener('click', () => this.close());
@@ -15,42 +16,57 @@ const Overlay = {
   },
 
   async open(mode) {
+    const requestSeq = ++this._requestSeq;
     this.mode = mode;
     const overlay = $('#overlay');
     const input = $('#overlay-input');
     overlay.classList.remove('hidden');
     input.value = '';
-    input.placeholder = mode === 'palette' ? '输入命令…' : (App.folder ? '输入文件名快速跳转…' : fmtKbd('尚未打开文件夹（⌘⇧O）', App.isMac));
+    input.placeholder = mode === 'palette'
+      ? '输入命令…'
+      : (App.folder ? '输入文件名快速跳转…' : '搜索最近文件，或打开新文件…');
 
     if (mode === 'quick') {
-      this._fileCache = App.folder ? await ink.walkMd(App.folder) : [];
-      this.items = this._fileCache.map((f) => ({
-        type: 'file',
-        icon: 'file',
-        title: f.name,
-        sub: f.rel,
-        key: f.rel,
-        run: () => App.openFile(f.path),
-      }));
-      // 追加命令入口
-      this.items.push({
-        type: 'cmd', icon: 'folder', title: '打开文件夹…', sub: '切换文档库', key: '打开文件夹 open folder',
-        run: () => App.openFolderDialog(),
+      const [folderFiles, recent] = await Promise.all([
+        App.folder
+          ? Promise.resolve().then(() => ink.walkMd(App.folder)).catch(() => [])
+          : Promise.resolve([]),
+        Promise.resolve().then(() => ink.getRecent()).catch(() => []),
+      ]);
+      if (!this._isCurrentRequest(requestSeq, mode, overlay)) return false;
+      this._fileCache = folderFiles;
+      this.items = QuickOpen.buildItems({
+        folderFiles,
+        recentFiles: recent && Array.isArray(recent.files) ? recent.files : [],
+        openFile: (path) => App.openFile(path),
+        openFileDialog: () => App.openFileDialog(),
+        openFolderDialog: () => App.openFolderDialog(),
       });
     } else {
       this.items = App.commands();
     }
+    if (!this._isCurrentRequest(requestSeq, mode, overlay)) return false;
     this._filter();
-    setTimeout(() => input.focus(), 30);
+    setTimeout(() => {
+      if (this._isCurrentRequest(requestSeq, mode, overlay)) input.focus();
+    }, 30);
+    return true;
   },
 
   close() {
+    this._requestSeq += 1;
     $('#overlay').classList.add('hidden');
     this.mode = null;
     Editor.ready && App.activeTab() && Editor.focus();
   },
 
   isOpen() { return this.mode !== null; },
+
+  _isCurrentRequest(requestSeq, mode, overlay) {
+    return requestSeq === this._requestSeq
+      && this.mode === mode
+      && !overlay.classList.contains('hidden');
+  },
 
   _filter() {
     const q = $('#overlay-input').value.trim();
@@ -74,7 +90,7 @@ const Overlay = {
     const box = $('#overlay-list');
     box.innerHTML = '';
     if (!this.filtered.length) {
-      box.appendChild(el('div', 'ov-empty', this.mode === 'quick' && !App.folder ? '先打开一个文件夹' : '没有匹配结果'));
+      box.appendChild(el('div', 'ov-empty', '没有匹配结果'));
       return;
     }
     const q = $('#overlay-input').value.trim();
@@ -143,3 +159,5 @@ const Overlay = {
     setTimeout(() => f.it.run(), 10);
   },
 };
+
+if (typeof module === 'object' && module.exports) module.exports = Overlay;
