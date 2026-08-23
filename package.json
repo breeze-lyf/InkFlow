@@ -1,7 +1,7 @@
 {
   "name": "inkflow",
   "productName": "墨流 InkFlow",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "优雅流畅的桌面 Markdown 编辑器 —— 即时渲染 · 文件库 · 命令面板",
   "main": "main/main.js",
   "author": "InkFlow",
@@ -51,6 +51,8 @@
       "output": "dist"
     },
     "files": [
+      "LICENSE",
+      "THIRD-PARTY-LICENSES.md",
       "main/**/*",
       "renderer/**/*",
       "samples/**/*",

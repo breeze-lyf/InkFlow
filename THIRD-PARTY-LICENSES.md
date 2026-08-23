@@ -6,18 +6,18 @@
 
 | 组件 | 版本 | 许可证 | 用途 | 主页 |
 | --- | --- | --- | --- | --- |
-| **Vditor** | 3.11.2 | MIT | Markdown 即时渲染内核（编辑器核心） | https://github.com/Vanessa219/vditor |
-| **Electron** | 33.4.11 | MIT | 跨平台桌面应用框架 | https://github.com/electron/electron |
+| **Vditor** | 3.11.3 | MIT | Markdown 即时渲染内核（编辑器核心） | https://github.com/Vanessa219/vditor |
+| **Electron** | 43.4.1 | MIT | 跨平台桌面应用框架 | https://github.com/electron/electron |
 | KaTeX | 0.16.9 | MIT | 数学公式渲染（Vditor 内置） | https://github.com/KaTeX/KaTeX |
-| highlight.js | 11.x | BSD-3-Clause | 代码语法高亮（Vditor 内置） | https://github.com/highlightjs/highlight.js |
-| Mermaid | 9.x | MIT | 流程图/时序图渲染（Vditor 内置） | https://github.com/mermaid-js/mermaid |
-| ECharts | 5.x | Apache-2.0 | 图表渲染（Vditor 内置） | https://github.com/apache/echarts |
+| highlight.js | 11.7.0 | BSD-3-Clause | 代码语法高亮（Vditor 内置） | https://github.com/highlightjs/highlight.js |
+| Mermaid | 11.16.1 | MIT | 流程图/时序图渲染（Vditor 内置） | https://github.com/mermaid-js/mermaid |
+| ECharts | 5.5.1 | Apache-2.0 | 图表渲染（Vditor 内置） | https://github.com/apache/echarts |
 
 ## 开发期工具（不随应用分发）
 
 | 组件 | 版本 | 许可证 | 用途 |
 | --- | --- | --- | --- |
-| electron-builder | 25.1.8 | MIT | 应用打包（.app / .dmg / .zip） |
+| electron-builder | 26.15.3 | MIT | 应用打包（.app / .dmg / .zip） |
 
 ---
 
@@ -49,11 +49,11 @@ SOFTWARE.
 
 ## Electron 许可证说明
 
-Electron 采用 MIT 许可证，版权所有 (c) OpenJS Foundation 及贡献者。
-完整许可证文本见 `node_modules/electron/LICENSE`。
+Electron 采用 MIT 许可证。完整版权声明与许可条款见
+[Electron 上游 LICENSE](https://github.com/electron/electron/blob/main/LICENSE)。
 
 ## 其他内置组件
 
 KaTeX（MIT）、highlight.js（BSD-3-Clause）、Mermaid（MIT）、ECharts（Apache-2.0）
-作为 Vditor 的内置依赖随其分发，各自保留原始版权声明与许可证文本，
-详见 Vditor 项目仓库及其官方文档。
+作为 Vditor 的内置依赖随其分发。各组件的完整版权声明与许可条款见其上游仓库；
+随组件文件提供的许可证或版权声明在打包时保持不变。

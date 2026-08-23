@@ -1,13 +1,13 @@
 # 墨流 InkFlow · 维护交接
 
-> 面向下一位维护者。最后更新：2026-08-23（v1.0.4）
+> 面向下一位维护者。最后更新：2026-08-23（v1.0.5）
 
 ## 1. 当前基线
 
 墨流是本地优先的桌面 Markdown 编辑器：Electron 43、Vditor 3.11.3 IR、Vanilla JavaScript。产品定位是 **Typora 的即时写感 + VSCode 式文档库工作流**。
 
 - 仓库：<https://github.com/breeze-lyf/InkFlow>
-- 最新发布：v1.0.4（macOS Apple Silicon，DMG / ZIP，未签名公证）
+- 最新发布：v1.0.5（macOS Apple Silicon，DMG / ZIP，未签名公证）
 - 功能冒烟基线：**44/44**
 - 正式导出：PDF、Word、PNG 长图、自包含 HTML
 - Windows / Linux：有构建配置与 CI，不代表实体机器发布验收已经完成
@@ -153,7 +153,7 @@ CI 构建结果只证明依赖可安装、测试可运行、目标包可生成�
 
 ```bash
 # 如需升版；只同步本地文件，不打标签、不上传
-npm run release:sync -- 1.0.4
+npm run release:sync -- 1.2.3  # 将示例版本替换为目标版本
 npm install --package-lock-only --ignore-scripts
 
 npm ci

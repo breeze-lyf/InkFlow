@@ -17,3 +17,10 @@ test('packaged app includes every offline renderer loaded dynamically by Vditor'
 
   assert.deepEqual(required.filter((entry) => !files.has(entry)), []);
 });
+
+test('packaged app includes project and third-party license notices', () => {
+  const files = new Set(pkg.build.files);
+
+  assert.equal(files.has('LICENSE'), true);
+  assert.equal(files.has('THIRD-PARTY-LICENSES.md'), true);
+});

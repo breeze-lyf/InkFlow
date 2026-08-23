@@ -84,11 +84,11 @@ Typora 把即时渲染做到了极致，但文件管理、标签页、命令面�
 
 官网（含下载入口）：**[inkflow.yufeng.fun](https://inkflow.yufeng.fun)**
 
-当前发布 **v1.0.4**，提供 **macOS (Apple Silicon)** 安装包。从 [Releases](https://github.com/breeze-lyf/InkFlow/releases) 下载 `墨流-x.y.z-arm64.dmg`，拖入「应用程序」即可。Windows / Linux 已纳入持续构建，但尚不等同于对应实体机器上的发布验收。
+当前发布 **v1.0.5**，提供 **macOS (Apple Silicon)** 安装包。从 [Releases](https://github.com/breeze-lyf/InkFlow/releases) 下载 `InkFlow-x.y.z-arm64.dmg`，拖入「应用程序」即可。Windows / Linux 已纳入持续构建，但尚不等同于对应实体机器上的发布验收。
 
 首次启动自动在文档目录创建「墨流示例」库，30 秒看完全部能力。
 
-> 当前为个人构建、未公证：**macOS** 如提示"已损坏"，双击 DMG 内的「解除打开限制.command」一键解除（或终端执行 `xattr -dr com.apple.quarantine "/Applications/墨流 InkFlow.app"`）。
+> 当前为个人构建、未公证：**macOS** 如提示"已损坏"，双击 DMG 内的「解除打开限制.command」一键解除（或终端执行 `xattr -dr com.apple.quarantine "/Applications/墨流.app"`）。
 > 设为 Markdown 默认打开：选中任意 .md 文件 → 右键 → 显示简介 → 打开方式 → 墨流 InkFlow → 全部更改。
 
 ## 从源码构建
@@ -149,5 +149,5 @@ inkflow/
 ---
 
 <div align="center">
-墨流 InkFlow · MIT License
+墨流 InkFlow · [MIT License](LICENSE)
 </div>

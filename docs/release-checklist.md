@@ -5,7 +5,7 @@
 ## 1. 准备版本
 
 - [ ] 从干净工作树开始。
-- [ ] 如需升版，运行 `npm run release:sync -- 1.0.4`，同步 `package.json`、README、HANDOFF、`site/` 与 `docs/` 的公开版本。
+- [ ] 如需升版，运行 `npm run release:sync -- 1.2.3`（将示例版本替换为目标版本），同步 `package.json`、README、HANDOFF、`site/` 与 `docs/` 的公开版本。
 - [ ] 若 `package.json` 版本变化，运行 `npm install --package-lock-only --ignore-scripts`，审查并提交锁文件变化。
 - [ ] 更新发布说明，确认没有把“CI 构建”写成“实体机器验收”。
 - [ ] 运行 `npm run version:check`。
@@ -24,6 +24,7 @@
 - [ ] 运行 `npm run dist` 生成 DMG + ZIP。
 - [ ] 创建与版本一致的本地 `vX.Y.Z` 标签后，保持工作树干净。
 - [ ] 运行 `npm run artifacts:check` 检查文件版本、大小、ZIP 尾记录、DMG 尾记录与 `latest-mac.yml`。
+- [ ] 检查打包应用与 DMG 根目录均包含项目 `LICENSE` 与 `THIRD-PARTY-LICENSES.md`。
 - [ ] 运行 `npm run release:check`，统一检查版本面、Git 状态、标签与 macOS 产物。
 - [ ] 在 DMG 中确认应用、安装说明和解除限制脚本齐全。
 
