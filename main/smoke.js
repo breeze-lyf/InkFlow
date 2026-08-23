@@ -181,9 +181,15 @@ async function runFuncSmoke() {
   results.push(['open-file', await js(`(App.activeTab() && App.activeTab().path === ${JSON.stringify(testFile)})`)]);
 
   // 2. 编辑 + 脏标记
-  await js(`Editor.insert('\\n\\n冒烟自动化测试：墨流已就绪。')`);
-  await wait(300);
-  results.push(['dirty-flag', await js(`App.activeTab().dirty`)]);
+  // 在同一个 renderer 任务中刷新并读取脏状态，避免繁忙 CI 把固定等待
+  // 延迟到自动保存完成之后，误把正确的 clean 状态判成 dirty 失败。
+  const dirtyAfterEdit = await js(`(() => {
+    const tab = App.activeTab();
+    Editor.insert('\\n\\n冒烟自动化测试：墨流已就绪。');
+    App.onEditorInput(tab.key);
+    return tab.dirty === true;
+  })()`);
+  results.push(['dirty-flag', dirtyAfterEdit]);
 
   // 3. 自动保存
   await wait(1400);
