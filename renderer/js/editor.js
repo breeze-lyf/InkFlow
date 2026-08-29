@@ -485,6 +485,21 @@ const Editor = {
     if (sc) sc.scrollTop = 0;
   },
 
+  // 查找替换属于正常编辑：保留 Vditor 的撤销栈，并让 App 走统一的脏状态/自动保存链路。
+  replaceValue(md) {
+    if (!this.vditor) return false;
+    this.vditor.setValue(md, false);
+    return true;
+  },
+
+  getSelectedText() {
+    const host = this.activeHost();
+    const selection = window.getSelection && window.getSelection();
+    if (!host || !selection || !selection.rangeCount || selection.isCollapsed) return '';
+    if (!host.contains(selection.anchorNode) || !host.contains(selection.focusNode)) return '';
+    return selection.toString();
+  },
+
   focus() {
     if (this.vditor) this.vditor.focus();
   },

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: file: http://127.0.0.1:*; font-src 'self' data: file:; connect-src 'self' http://127.0.0.1:*; frame-src http://127.0.0.1:*; media-src 'self' data: blob: file: http://127.0.0.1:*; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <title>墨流 InkFlow</title>
+  <title>InkFlow 墨流</title>
   <link rel="stylesheet" href="../node_modules/vditor/dist/index.css">
   <link rel="stylesheet" href="css/themes.css">
   <link rel="stylesheet" href="css/app.css">
@@ -92,6 +92,23 @@
       </div>
 
       <div id="editor-area">
+        <div id="find-replace" class="hidden" role="search" aria-label="查找和替换" aria-hidden="true">
+          <div class="find-row">
+            <button id="find-toggle-replace" class="find-icon-btn" title="展开替换" aria-label="展开替换" aria-expanded="false">⌄</button>
+            <input id="find-input" type="text" placeholder="查找" aria-label="查找内容" spellcheck="false" autocomplete="off">
+            <span id="find-count" aria-live="polite">0 / 0</span>
+            <button id="find-case" class="find-text-btn" title="区分大小写" aria-label="区分大小写" aria-pressed="false">Aa</button>
+            <button id="find-prev" class="find-icon-btn" title="上一个 (⇧↵)" aria-label="上一个匹配项">↑</button>
+            <button id="find-next" class="find-icon-btn" title="下一个 (↵)" aria-label="下一个匹配项">↓</button>
+            <button id="find-close" class="find-icon-btn" title="关闭 (Esc)" aria-label="关闭查找">×</button>
+          </div>
+          <div id="replace-row" class="find-row hidden">
+            <span class="find-indent" aria-hidden="true"></span>
+            <input id="replace-input" type="text" placeholder="替换为" aria-label="替换内容" spellcheck="false" autocomplete="off">
+            <button id="replace-one" class="find-action-btn">替换</button>
+            <button id="replace-all" class="find-action-btn">全部替换</button>
+          </div>
+        </div>
         <div id="editor-hosts"></div>
 
         <!-- 文件预览层（图片/PDF 只读页签） -->
@@ -108,7 +125,7 @@
         <div id="welcome">
           <div id="welcome-inner">
             <div id="welcome-logo">
-              <img src="../assets/brand-lockup.png" alt="墨流 InkFlow">
+              <img src="../assets/brand-lockup.png" alt="InkFlow 墨流">
             </div>
             <p class="welcome-tag">纸上得来终觉浅，落笔此处墨自流</p>
             <div id="welcome-actions">
@@ -164,6 +181,7 @@
         <div><kbd>⇧⌘O</kbd> 打开文件夹</div><div><kbd>⌘S</kbd> 保存</div>
         <div><kbd>⇧⌘S</kbd> 另存为</div><div><kbd>⌘W</kbd> 关闭标签页</div>
         <div><kbd>⌘P</kbd> 快速打开</div><div><kbd>⇧⌘P</kbd> 命令面板</div>
+        <div><kbd>⌘F</kbd> 查找</div><div><kbd data-kbd-win="Ctrl+H">⌥⌘F</kbd> 查找和替换</div>
         <div><kbd>⌥⇧← / →</kbd> 移动当前标签</div><div><kbd>← / →</kbd> 聚焦标签时切换</div>
         <div><kbd>⌘B</kbd> 加粗</div><div><kbd>⌘I</kbd> 斜体</div>
         <div><kbd>⌘K</kbd> 插入链接</div><div><kbd>⌘E</kbd> 行内代码</div>
@@ -181,10 +199,10 @@
   <div id="modal-about" class="modal hidden">
     <div class="modal-mask"></div>
     <div class="modal-box about-box">
-      <div class="modal-title">关于墨流 <span class="modal-close" data-close>×</span></div>
+      <div class="modal-title">关于 InkFlow 墨流 <span class="modal-close" data-close>×</span></div>
       <div class="about-body">
         <img src="../assets/icon.png" width="64" height="64" style="border-radius: 14px;" alt="墨流">
-        <h2>墨流 InkFlow <span id="about-ver"></span></h2>
+        <h2>InkFlow 墨流 <span id="about-ver"></span></h2>
         <p>优雅流畅的桌面 Markdown 编辑器</p>
         <p class="about-dim">即时渲染 · 文档库 · 命令面板 · 专注写作</p>
         <p class="about-dim">基于开源项目 <b>Vditor</b>（MIT License）构建</p>
@@ -206,7 +224,7 @@
       <div class="set-group">
         <div class="set-label">主色调</div>
         <div class="set-seg" id="set-accent">
-          <button data-v="indigo">经典靛蓝</button><button data-v="zhu">印章朱</button><button data-v="dai">黛蓝</button><button data-v="cha">茶褐</button>
+          <button data-v="indigo">经典靛蓝</button><button data-v="zhu">印章朱</button><button data-v="dai">黛蓝</button><button data-v="cha">茶褐</button><button data-v="yan">砚灰</button>
         </div>
       </div>
       <div class="set-group">
@@ -228,7 +246,7 @@
         <label class="set-toggle"><input type="checkbox" id="set-typewriter"> 打字机模式<span class="set-dim">光标行始终居中</span></label>
         <label class="set-toggle"><input type="checkbox" id="set-toolbar"> 显示编辑工具栏</label>
       </div>
-      <div class="set-foot"><span id="set-ver"></span> · <a id="set-shortcuts-link">键盘快捷键</a> · <a id="set-about-link">关于墨流</a></div>
+      <div class="set-foot"><span id="set-ver"></span> · <a id="set-shortcuts-link">键盘快捷键</a> · <a id="set-about-link">关于 InkFlow 墨流</a></div>
     </div>
   </div>
 
@@ -261,6 +279,7 @@
   <script src="js/export-renderer.js"></script>
   <script src="js/quick-open.js"></script>
   <script src="js/editor.js"></script>
+  <script src="js/find-replace.js"></script>
   <script src="js/panels.js"></script>
   <script src="js/overlay.js"></script>
   <script src="js/exporter.js"></script>

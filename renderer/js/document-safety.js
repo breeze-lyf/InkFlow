@@ -1,4 +1,4 @@
-// ============ 墨流 InkFlow · 文稿安全决策 ============
+// ============ InkFlow 墨流 · 文稿安全决策 ============
 'use strict';
 
 (function expose(root, factory) {

@@ -30,8 +30,8 @@
   margin: 1.4em 0 0.55em;
   letter-spacing: 0.01em;
 }
-.vditor-reset h1 { font-size: 1.72em; padding-bottom: 0.28em; border-bottom: 1px solid var(--ink-border); }
-.vditor-reset h2 { font-size: 1.42em; padding-bottom: 0.22em; border-bottom: 1px solid var(--ink-border); }
+.vditor-reset h1 { font-size: 1.72em; padding-bottom: 0; border-bottom: none; }
+.vditor-reset h2 { font-size: 1.42em; padding-bottom: 0; border-bottom: none; }
 .vditor-reset h3 { font-size: 1.18em; }
 .vditor-reset h4 { font-size: 1.05em; }
 .vditor-reset h5 { font-size: 0.95em; }
@@ -128,9 +128,10 @@
 
 .vditor-reset hr {
   border: none;
+  display: block;
   height: 1px;
   background: var(--ink-border);
-  margin: 2em auto;
+  margin: 1em 0;
   width: 100%;
 }
 .vditor-reset img {

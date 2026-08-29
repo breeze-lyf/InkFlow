@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>墨流 InkFlow · 写下来，就是排版</title>
-<meta name="description" content="墨流 InkFlow —— 免费开源的 macOS Markdown 编辑器。即时渲染、文档库、一键导出 PDF/Word/长图。纸与墨，双主题。">
+<title>InkFlow 墨流 · 写下来，就是排版</title>
+<meta name="description" content="InkFlow 墨流 —— 免费开源的 macOS Markdown 编辑器。即时渲染、文档库、一键导出 PDF/Word/长图。纸与墨，双主题。">
 <link rel="icon" href="logo.png">
 <style>
 /* ============ 纸/墨 设计令牌（与产品同源） ============ */
@@ -236,7 +236,7 @@ footer .sp { flex: 1; }
 
 <nav>
   <div class="wrap">
-    <div class="brand"><img src="logo.png" alt="墨流">墨流 InkFlow</div>
+    <div class="brand"><img src="logo.png" alt="InkFlow 墨流">InkFlow 墨流</div>
     <div class="links">
       <a href="#shots">截图</a>
       <a href="#feats">功能</a>
@@ -257,7 +257,7 @@ footer .sp { flex: 1; }
 
 <header class="hero wrap">
   <div>
-    <span class="eyebrow">v1.0.5 · 免费 · 开源 · macOS</span>
+    <span class="eyebrow">v1.0.6 · 免费 · 开源 · macOS</span>
     <h1>写下来，<br>就是<em>排版</em>。</h1>
     <p class="sub">墨流是一款即时渲染的 Markdown 编辑器。写符号，变排版 —— 笔记、日报、方案一气呵成，写完一键导出 PDF、Word、长图。</p>
     <div class="cta">
@@ -281,11 +281,11 @@ footer .sp { flex: 1; }
 
 <section class="rel wrap">
   <div class="rel-box">
-    <span class="rel-tag">v1.0.5 更新</span>
-    <span class="rel-item">MIT 开源许可</span>
-    <span class="rel-item">第三方声明同步</span>
-    <span class="rel-item">macOS 安装说明修正</span>
-    <span class="rel-item">页签拖拽排序</span>
+    <span class="rel-tag">v1.0.6 更新</span>
+    <span class="rel-item">查找与替换</span>
+    <span class="rel-item">当前文件自动定位</span>
+    <span class="rel-item">新增砚灰主题</span>
+    <span class="rel-item">标题与分隔线间距优化</span>
     <span class="rel-item">功能回归 44/44</span>
   </div>
 </section>
@@ -355,7 +355,7 @@ footer .sp { flex: 1; }
     <p>免费，开源，只有写作本身。</p>
     <a class="btn pri" style="font-size:16px;padding:15px 32px" href="https://github.com/breeze-lyf/InkFlow/releases/latest" target="_blank" rel="noopener">
       <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v8m0 0L4.5 6.5M8 10l3.5-3.5M2.5 13.5h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      下载墨流 InkFlow
+      下载 InkFlow 墨流
     </a>
     <p class="note">macOS · Apple Silicon · 约 100MB</p>
   </div>
@@ -363,7 +363,7 @@ footer .sp { flex: 1; }
 
 <footer>
   <div class="wrap">
-    <span>墨流 InkFlow —— 纸墨之间，自由书写</span>
+    <span>InkFlow 墨流 —— 纸墨之间，自由书写</span>
     <div class="sp"></div>
     <a href="https://github.com/breeze-lyf/InkFlow" target="_blank" rel="noopener">GitHub</a>
     <span>MIT License</span>
@@ -386,7 +386,7 @@ if (matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark');
 
 /* ---- 自动打字演示：敲符号 → 变排版（即时渲染的直观演绎） ---- */
 const LINES = [
-  { type: 'h1', raw: '# 墨流 InkFlow' },
+  { type: 'h1', raw: '# InkFlow 墨流' },
   { type: 'p',  raw: '写下符号，就是排版 —— **即时渲染**的 Markdown 编辑器。' },
   { type: 'h2', raw: '## 为什么顺手' },
   { type: 'li', raw: '- `⌘S` 保存？不需要，**自动保存**' },

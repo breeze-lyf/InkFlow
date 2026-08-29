@@ -24,7 +24,9 @@ function createSmokeRunner(options = {}) {
 
 async function runSmoke() {
   const mainWin = getMainWindow();
-  const outDir = app.isPackaged
+  const outDir = env.SMOKE_OUT_DIR
+    ? path.resolve(env.SMOKE_OUT_DIR)
+    : app.isPackaged
     ? path.join(os.tmpdir(), 'inkflow-shots')
     : path.join(projectRoot, 'assets', 'screenshots');
   fs.mkdirSync(outDir, { recursive: true });
@@ -125,9 +127,14 @@ async function runSmoke() {
       mainWin.webContents.send('menu:action', { action: 'set-page-width', payload: 'wide' });
     } else if (shot === 'sidebar-off') {
       mainWin.webContents.send('menu:action', { action: 'toggle-sidebar' });
+    } else if (shot === 'settings') {
+      await mainWin.webContents.executeJavaScript(`App.openSettings(); 'ok'`);
     } else if (shot.startsWith('accent-')) {
-      const v = shot.split('-')[1];
-      await mainWin.webContents.executeJavaScript(`App.setAccent(${JSON.stringify(v || 'indigo')}); 'ok'`);
+      const [, v, appearance] = shot.split('-');
+      await mainWin.webContents.executeJavaScript(`
+        ${appearance === 'light' || appearance === 'dark' ? `App.setTheme(${JSON.stringify(appearance)});` : ''}
+        App.setAccent(${JSON.stringify(v || 'indigo')});
+        'ok'`);
     } else if (shot.startsWith('scroll-')) {
       const y = parseInt(shot.split('-')[1], 10) || 0;
       await mainWin.webContents.executeJavaScript(`
@@ -139,6 +146,8 @@ async function runSmoke() {
     fs.writeFileSync(path.join(outDir, `smoke-${shot}.png`), img.toPNG());
     if (shot === 'palette') {
       mainWin.webContents.send('menu:action', { action: 'close-overlays' });
+    } else if (shot === 'settings') {
+      await mainWin.webContents.executeJavaScript(`document.querySelector('#modal-settings').classList.add('hidden'); 'ok'`);
     }
   }
   logger.log('[smoke] screenshots saved to', outDir);
@@ -736,23 +745,45 @@ async function runFuncSmoke() {
   results.push(['open-no-dirty', nodirty.dirty === false]);
   if (nodirty.dirty !== false) logger.log('[debug] open-no-dirty:', JSON.stringify(nodirty));
 
-  // 6.97815 主色调切换：印章朱生效 + 回切靛蓝还原
+  // 6.97815 主色调切换：砚灰明暗配色、内容同步、持久化 + 回切靛蓝还原
   const acc = await js(`(async () => {
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     App.setTheme('light');
     await sleep(300);
-    App.setAccent('zhu');
+    const button = document.querySelector('#set-accent [data-v="yan"]');
+    button && button.click();
     await sleep(300);
-    const cs = getComputedStyle(document.body);
-    const zhuOk = document.body.dataset.accent === 'zhu' && cs.getPropertyValue('--accent').trim() === '#b5432f';
+    const reset = document.querySelector('.editor-host:not(.hidden) .vditor-reset');
+    const lightOk = !!button
+      && button.classList.contains('active')
+      && document.body.dataset.accent === 'yan'
+      && getComputedStyle(document.body).getPropertyValue('--accent').trim() === '#414141'
+      && getComputedStyle(document.body).getPropertyValue('--bg-app').trim() === '#f9f9f9'
+      && getComputedStyle(document.body).getPropertyValue('--bg-sidebar').trim() === '#f3f3f3'
+      && getComputedStyle(document.body).getPropertyValue('--bg-editor').trim() === '#ffffff'
+      && getComputedStyle(document.body).getPropertyValue('--bg-elevated').trim() === '#ffffff'
+      && getComputedStyle(reset).getPropertyValue('--ink-accent').trim() === '#414141';
+    App.setTheme('dark');
+    await sleep(300);
+    const darkOk = getComputedStyle(document.body).getPropertyValue('--accent').trim() === '#afafaf'
+      && getComputedStyle(document.body).getPropertyValue('--bg-app').trim() === '#181818'
+      && getComputedStyle(document.body).getPropertyValue('--bg-sidebar').trim() === '#181818'
+      && getComputedStyle(document.body).getPropertyValue('--bg-editor').trim() === '#212121'
+      && getComputedStyle(document.body).getPropertyValue('--bg-elevated').trim() === '#282828'
+      && getComputedStyle(reset).getPropertyValue('--ink-accent').trim() === '#afafaf';
+    const saved = await ink.getSettings();
+    const savedOk = saved && saved.accent === 'yan';
     App.setAccent('indigo');
     await sleep(200);
-    const backOk = getComputedStyle(document.body).getPropertyValue('--accent').trim() === '#4c5fd5';
+    const backDarkOk = getComputedStyle(document.body).getPropertyValue('--accent').trim() === '#93a1ff';
+    App.setTheme('light');
+    await sleep(200);
+    const backLightOk = getComputedStyle(document.body).getPropertyValue('--accent').trim() === '#4c5fd5';
     App.setTheme('system');
-    return { zhuOk, backOk };
+    return { lightOk, darkOk, savedOk, backDarkOk, backLightOk };
   })()`);
-  results.push(['accent-palette', acc.zhuOk === true && acc.backOk === true]);
-  if (!(acc.zhuOk && acc.backOk)) logger.log('[debug] accent:', JSON.stringify(acc));
+  results.push(['accent-palette', acc.lightOk === true && acc.darkOk === true && acc.savedOk === true && acc.backDarkOk === true && acc.backLightOk === true]);
+  if (!(acc.lightOk && acc.darkOk && acc.savedOk && acc.backDarkOk && acc.backLightOk)) logger.log('[debug] accent:', JSON.stringify(acc));
 
   // 6.979 markmap 离线渲染（懒加载本地引擎，应出现 svg 导图）
   await js(`App.activate(App.tabs.findIndex(t => t.path === ${JSON.stringify(testFile)}))`);

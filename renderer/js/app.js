@@ -1,4 +1,4 @@
-// ============ 墨流 InkFlow · 应用编排 ============
+// ============ InkFlow 墨流 · 应用编排 ============
 'use strict';
 
 const App = {
@@ -44,6 +44,7 @@ const App = {
 
     await Editor.init();
     Editor.setTypewriter(this.settings.typewriter !== false);
+    FindReplace.init();
 
     this._bindUI();
     this._bindMenu();
@@ -60,7 +61,7 @@ const App = {
   // Windows/Linux：静态界面里的 ⌘⌥⇧ 符号替换为 Ctrl/Alt/Shift 文字
   _localizeKbds() {
     if (this.isMac) return;
-    $$('kbd').forEach((k) => { k.textContent = fmtKbd(k.textContent, false); });
+    $$('kbd').forEach((k) => { k.textContent = k.dataset.kbdWin || fmtKbd(k.textContent, false); });
     $$('[title]').forEach((n) => {
       const t = n.getAttribute('title');
       if (t && /[⌘⌥⇧]/.test(t)) n.setAttribute('title', fmtKbd(t, false));
@@ -349,6 +350,8 @@ const App = {
       this.updateStatus();
       Outline.render();
       FileTree.markActive(tab.path);
+      if (tab.path && this.folder && this._pathWithin(tab.path, this.folder)) FileTree.reveal(tab.path);
+      if (typeof FindReplace !== 'undefined') FindReplace.sync();
       ink.setWindowFile(tab.path, false);
       this._persistSession();
       return true;
@@ -374,6 +377,7 @@ const App = {
     this.updateStatus();
     Outline.render();
     FileTree.markActive(tab.path);
+    if (typeof FindReplace !== 'undefined') FindReplace.sync();
     ink.setWindowFile(tab.path || '', tab.dirty);
     if (tab.path && this.folder && this._pathWithin(tab.path, this.folder)) {
       FileTree.reveal(tab.path);
@@ -477,6 +481,7 @@ const App = {
         this.updateStatus();
         Outline.render();
         FileTree.markActive(null);
+        if (typeof FindReplace !== 'undefined') FindReplace.sync();
         ink.setWindowFile('', false);
       }
     } else {
@@ -1249,7 +1254,10 @@ const App = {
         const i = parseInt(e.code.slice(5), 10) - 1;
         if (i < this.tabs.length) { e.preventDefault(); this.activate(i); }
       }
-      if (e.key === 'Escape' && Overlay.isOpen()) Overlay.close();
+      if (e.key === 'Escape' && FindReplace.isOpen()) {
+        e.preventDefault();
+        FindReplace.close();
+      } else if (e.key === 'Escape' && Overlay.isOpen()) Overlay.close();
     });
 
     // 拖拽文件进窗口（.md 直接打开；图片插入当前文档）
@@ -1383,7 +1391,7 @@ const App = {
     this._applyThemeSetting(mode);
   },
 
-  /* ---- 主色调（经典靛蓝 / 印章朱 / 黛蓝 / 茶褐） ---- */
+  /* ---- 主色调（经典靛蓝 / 印章朱 / 黛蓝 / 茶褐 / 砚灰） ---- */
   setAccent(v) {
     this.settings.accent = v;
     this.setSetting({ accent: v });
@@ -1698,6 +1706,8 @@ const App = {
       { icon: 'cmd', title: '保存', kbd: '⌘S', run: () => this.save() },
       { icon: 'cmd', title: '另存为…', kbd: '⇧⌘S', run: () => this.saveAs() },
       { icon: 'cmd', title: '关闭当前标签页', kbd: '⌘W', run: () => this.closeTab(this.active) },
+      { icon: 'search', title: '查找', kbd: '⌘F', run: () => FindReplace.open(false) },
+      { icon: 'search', title: '查找和替换', kbd: this.isMac ? '⌥⌘F' : 'Ctrl+H', run: () => FindReplace.open(true) },
       { icon: 'search', title: '快速打开文件', kbd: '⌘P', run: () => Overlay.open('quick') },
       { icon: 'cmd', title: '导出为 PDF…', kbd: '⌥⌘P', run: () => Exporter.exportPdf() },
       { icon: 'cmd', title: '导出为 Word…', kbd: '⌥⌘W', run: () => Exporter.exportWord() },
@@ -1738,7 +1748,7 @@ const App = {
       { icon: 'file', title: '打开功能演示文档', run: () => this.openDemo() },
       { icon: 'cmd', title: '键盘快捷键', kbd: '⌘/', run: () => $('#modal-shortcuts').classList.remove('hidden') },
       { icon: 'cmd', title: '打开设置', kbd: '⌘,', run: () => this.openSettings() },
-      { icon: 'cmd', title: '关于墨流', run: () => $('#modal-about').classList.remove('hidden') },
+      { icon: 'cmd', title: '关于 InkFlow 墨流', run: () => $('#modal-about').classList.remove('hidden') },
     ];
   },
 
@@ -1775,7 +1785,9 @@ const App = {
         case 'export-html': Exporter.exportHtml(); break;
         case 'close-tab': if (this.active >= 0) this.closeTab(this.active); break;
         case 'close-all-tabs': await this._closeAllTabs(); break;
-        case 'close-overlays': Overlay.close(); $$('.modal').forEach((m) => m.classList.add('hidden')); break;
+        case 'close-overlays': Overlay.close(); FindReplace.close(); $$('.modal').forEach((m) => m.classList.add('hidden')); break;
+        case 'find': FindReplace.open(false); break;
+        case 'replace': FindReplace.open(true); break;
         case 'format': {
           if (/^h[1-6]$/.test(payload)) Editor.heading(parseInt(payload.slice(1), 10));
           else if (payload === 'paragraph') Editor.heading(0);

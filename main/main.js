@@ -1,4 +1,4 @@
-// 墨流 InkFlow —— Electron 主进程
+// InkFlow 墨流 —— Electron 主进程
 const { app, BrowserWindow, ipcMain, dialog, shell, nativeTheme, session, utilityProcess } = require('electron');
 const fs = require('fs');
 const os = require('os');
@@ -26,8 +26,10 @@ const { authorizeDocumentAssets, writableAssetsDirectory } = require('./document
 const { startAssetServer } = require('./server');
 const { buildMenu } = require('./menu');
 const { createSmokeRunner } = require('./smoke');
+const { DISPLAY_NAME, preserveUserDataLocation } = require('./app-identity');
 
 const isSmoke = process.env.SMOKE === '1';
+preserveUserDataLocation(app, { isSmoke });
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock && !isSmoke) {
   app.quit();
@@ -65,6 +67,7 @@ function watchFolder(dir) {
 const userData = app.getPath('userData');
 const settings = new Store(path.join(userData, 'settings.json'), {
   theme: 'system',
+  accent: 'indigo',
   fontSize: 16,
   showToolbar: false,
   focusMode: false,
@@ -214,7 +217,7 @@ function createWindow() {
     height: isSmoke ? 920 : 820,
     minWidth: 880,
     minHeight: 560,
-    title: '墨流 InkFlow',
+    title: DISPLAY_NAME,
     // 仅 macOS 使用隐藏式标题栏（红绿灯）；Windows/Linux 用原生标题栏 + 系统菜单
     ...(isMac
       ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 14 } }
@@ -565,7 +568,7 @@ function registerIPC() {
     } else {
       // Windows/Linux：原生标题栏显示当前文件名与编辑状态
       const name = p ? path.basename(p) : '未命名';
-      mainWin.setTitle(`${name}${edited ? ' •' : ''} — 墨流 InkFlow`);
+      mainWin.setTitle(`${name}${edited ? ' •' : ''} — ${DISPLAY_NAME}`);
     }
   });
 

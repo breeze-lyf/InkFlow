@@ -1,7 +1,7 @@
 {
   "name": "inkflow",
-  "productName": "墨流 InkFlow",
-  "version": "1.0.5",
+  "productName": "InkFlow 墨流",
+  "version": "1.0.6",
   "description": "优雅流畅的桌面 Markdown 编辑器 —— 即时渲染 · 文件库 · 命令面板",
   "main": "main/main.js",
   "author": "InkFlow",
@@ -46,7 +46,7 @@
   },
   "build": {
     "appId": "com.inkflow.markdown",
-    "productName": "墨流",
+    "productName": "InkFlow 墨流",
     "directories": {
       "output": "dist"
     },
@@ -186,12 +186,12 @@
         "zip"
       ],
       "extendInfo": {
-        "CFBundleDisplayName": "墨流 InkFlow",
+        "CFBundleDisplayName": "InkFlow 墨流",
         "CFBundleSpokenName": "InkFlow"
       }
     },
     "dmg": {
-      "title": "墨流 InkFlow",
+      "title": "InkFlow 墨流",
       "window": {
         "width": 560,
         "height": 360
@@ -208,7 +208,7 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "墨流 InkFlow",
+      "shortcutName": "InkFlow 墨流",
       "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
     },
     "linux": {

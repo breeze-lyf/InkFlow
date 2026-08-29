@@ -42,7 +42,7 @@ function buildMenu(win, ctx) {
           {
             label: app.name,
             submenu: [
-              { label: '关于墨流', click: () => send(win, 'about') },
+              { label: `关于 ${app.name}`, click: () => send(win, 'about') },
               { type: 'separator' },
               { label: '偏好设置…', accelerator: 'CmdOrCtrl+,', click: () => send(win, 'open-settings') },
               { type: 'separator' },
@@ -96,6 +96,9 @@ function buildMenu(win, ctx) {
         { role: 'copy', label: '复制' },
         { role: 'paste', label: '粘贴' },
         { role: 'selectAll', label: '全选' },
+        { type: 'separator' },
+        { label: '查找…', accelerator: 'CmdOrCtrl+F', click: () => send(win, 'find') },
+        { label: '查找和替换…', accelerator: isMac ? 'Cmd+Alt+F' : 'Ctrl+H', click: () => send(win, 'replace') },
         { type: 'separator' },
         { label: '加粗', accelerator: 'CmdOrCtrl+B', click: () => send(win, 'format', 'bold') },
         { label: '斜体', accelerator: 'CmdOrCtrl+I', click: () => send(win, 'format', 'italic') },
@@ -171,7 +174,7 @@ function buildMenu(win, ctx) {
         { type: 'separator' },
         { label: 'Vditor 项目主页', click: () => shell.openExternal('https://github.com/Vanessa219/vditor') },
         // Windows/Linux：macOS 应用菜单里的关于入口移到帮助菜单
-        ...(isMac ? [] : [{ type: 'separator' }, { label: '关于墨流', click: () => send(win, 'about') }]),
+        ...(isMac ? [] : [{ type: 'separator' }, { label: `关于 ${app.name}`, click: () => send(win, 'about') }]),
       ],
     },
   ];

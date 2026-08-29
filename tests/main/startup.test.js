@@ -15,6 +15,6 @@ test('asset-server startup rejection is reported and terminates with a controlle
   });
 
   assert.equal(calls[0][0], 'log');
-  assert.deepEqual(calls[1], ['dialog', '墨流启动失败', '本地资源服务无法启动：listen EACCES']);
+  assert.deepEqual(calls[1], ['dialog', 'InkFlow 墨流启动失败', '本地资源服务无法启动：listen EACCES']);
   assert.deepEqual(calls[2], ['exit', 1]);
 });

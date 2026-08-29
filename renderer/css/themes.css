@@ -1,4 +1,4 @@
-/* ============ 墨流 InkFlow · 设计令牌 ============ */
+/* ============ InkFlow 墨流 · 设计令牌 ============ */
 
 :root {
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
@@ -123,6 +123,67 @@ body[data-accent="cha"][data-theme="light"] {
 body[data-accent="cha"][data-theme="dark"] {
   --accent: #c9a06a; --accent-strong: #d9b47e; --accent-soft: rgba(201, 160, 106, 0.16); --link: #c9a06a;
 }
+/* 砚灰：Codex 式冷灰白层级，不混入米白或暖灰 */
+body[data-accent="yan"][data-theme="light"] {
+  --bg-app: #f9f9f9;
+  --bg-sidebar: #f3f3f3;
+  --bg-sidebar-hover: rgba(26, 28, 31, 0.06);
+  --bg-sidebar-active: rgba(26, 28, 31, 0.10);
+  --bg-editor: #ffffff;
+  --bg-tabbar: #f9f9f9;
+  --bg-tab-active: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-input: rgba(26, 28, 31, 0.05);
+  --bg-code: #f3f3f3;
+  --bg-blockquote: #f9f9f9;
+  --text-1: #1a1c1f;
+  --text-2: #5d5d5d;
+  --text-3: #6b6b6b;
+  --text-faint: #6f6f6f;
+  --border: rgba(26, 28, 31, 0.08);
+  --border-strong: rgba(26, 28, 31, 0.16);
+  --accent: #414141;
+  --accent-strong: #303030;
+  --accent-soft: rgba(26, 28, 31, 0.08);
+  --accent-text: #ffffff;
+  --mark: rgba(65, 65, 65, 0.14);
+  --code-inline: #414141;
+  --link: #414141;
+  --shadow-pop: 0 12px 40px rgba(26, 28, 31, 0.15), 0 2px 8px rgba(26, 28, 31, 0.08);
+  --shadow-card: 0 1px 3px rgba(26, 28, 31, 0.07);
+  --selection: rgba(26, 28, 31, 0.14);
+  --scrollbar: rgba(26, 28, 31, 0.22);
+}
+body[data-accent="yan"][data-theme="dark"] {
+  --bg-app: #181818;
+  --bg-sidebar: #181818;
+  --bg-sidebar-hover: rgba(255, 255, 255, 0.05);
+  --bg-sidebar-active: rgba(255, 255, 255, 0.08);
+  --bg-editor: #212121;
+  --bg-tabbar: #181818;
+  --bg-tab-active: #212121;
+  --bg-elevated: #282828;
+  --bg-input: rgba(255, 255, 255, 0.05);
+  --bg-code: #181818;
+  --bg-blockquote: rgba(255, 255, 255, 0.035);
+  --text-1: #dfdfdf;
+  --text-2: #afafaf;
+  --text-3: #9b9b9b;
+  --text-faint: #8f8f8f;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --accent: #afafaf;
+  --accent-strong: #dfdfdf;
+  --accent-soft: rgba(255, 255, 255, 0.08);
+  --accent-text: #181818;
+  --mark: rgba(255, 255, 255, 0.14);
+  --code-inline: #cdcdcd;
+  --link: #cdcdcd;
+  --shadow-pop: 0 14px 48px rgba(0, 0, 0, 0.52), 0 2px 10px rgba(0, 0, 0, 0.38);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.30);
+  --selection: rgba(255, 255, 255, 0.18);
+  --scrollbar: rgba(255, 255, 255, 0.20);
+}
 
 /* 编辑器内容主题的强调色同步（高特异性覆盖内容主题的 --ink-accent 族） */
 body[data-accent="zhu"][data-theme="light"] .vditor-reset { --ink-accent: #b5432f; --ink-accent-strong: #96392a; }
@@ -131,3 +192,98 @@ body[data-accent="dai"][data-theme="light"] .vditor-reset { --ink-accent: #41577
 body[data-accent="dai"][data-theme="dark"] .vditor-reset { --ink-accent: #92a9d4; --ink-accent-strong: #abbede; }
 body[data-accent="cha"][data-theme="light"] .vditor-reset { --ink-accent: #8a6534; --ink-accent-strong: #6e4f27; }
 body[data-accent="cha"][data-theme="dark"] .vditor-reset { --ink-accent: #c9a06a; --ink-accent-strong: #d9b47e; }
+body[data-accent="yan"][data-theme="light"] .vditor-reset {
+  --ink-text: #1a1c1f;
+  --ink-text-2: #5d5d5d;
+  --ink-text-3: #6b6b6b;
+  --ink-faint: #6f6f6f;
+  --ink-accent: #414141;
+  --ink-accent-strong: #303030;
+  --ink-border: rgba(26, 28, 31, 0.12);
+  --ink-code-bg: #f3f3f3;
+  --ink-quote-bg: #f9f9f9;
+  --ink-mark: rgba(65, 65, 65, 0.14);
+  --ink-inline-code: #414141;
+}
+body[data-accent="yan"][data-theme="dark"] .vditor-reset {
+  --ink-text: #dfdfdf;
+  --ink-text-2: #afafaf;
+  --ink-text-3: #9b9b9b;
+  --ink-faint: #8f8f8f;
+  --ink-accent: #afafaf;
+  --ink-accent-strong: #dfdfdf;
+  --ink-border: rgba(255, 255, 255, 0.12);
+  --ink-code-bg: #181818;
+  --ink-quote-bg: rgba(255, 255, 255, 0.035);
+  --ink-mark: rgba(255, 255, 255, 0.14);
+  --ink-inline-code: #cdcdcd;
+}
+body[data-accent="yan"][data-theme="light"] .vditor-reset a {
+  text-decoration: underline;
+  text-decoration-color: rgba(26, 28, 31, 0.34);
+  text-underline-offset: 0.16em;
+  border-bottom-color: transparent;
+}
+body[data-accent="yan"][data-theme="dark"] .vditor-reset a {
+  text-decoration: underline;
+  text-decoration-color: rgba(220, 221, 222, 0.36);
+  text-underline-offset: 0.16em;
+  border-bottom-color: transparent;
+}
+body[data-accent="yan"] .ink-editor .vditor-ir .vditor-toc span[data-type="toc-h"] {
+  color: var(--accent) !important;
+  text-decoration-color: currentColor;
+  text-underline-offset: 0.16em;
+}
+body[data-accent="yan"] .ink-editor .vditor-ir .vditor-toc {
+  color: var(--accent) !important;
+}
+body[data-accent="yan"] .ink-editor .vditor-ir .vditor-toc span[data-target-id] {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-underline-offset: 0.16em;
+}
+body[data-accent="yan"] .ink-editor .vditor-ir .vditor-ir__node[data-type="link-ref"],
+body[data-accent="yan"] .ink-editor .vditor-ir .vditor-ir__node[data-type="footnotes-ref"] {
+  color: var(--accent) !important;
+}
+body[data-accent="yan"][data-theme="light"] .vditor-reset pre { background: #f3f3f3; }
+body[data-accent="yan"][data-theme="light"] .vditor-reset table th { background: #f3f3f3; }
+body[data-accent="yan"][data-theme="light"] .vditor-reset table tr:nth-child(even) td { background: #f9f9f9; }
+body[data-accent="yan"][data-theme="light"] .vditor-reset kbd {
+  background: #f9f9f9;
+  box-shadow: 0 1px 2px rgba(26, 28, 31, 0.08);
+}
+body[data-accent="yan"][data-theme="light"] .vditor-reset .language-mermaid,
+body[data-accent="yan"][data-theme="light"] .vditor-reset .language-echarts,
+body[data-accent="yan"][data-theme="light"] .vditor-reset .language-mindmap { background: #f9f9f9; }
+body[data-accent="yan"][data-theme="dark"] .vditor-reset pre { background: #181818; }
+body[data-accent="yan"][data-theme="dark"] .vditor-reset table th { background: rgba(255, 255, 255, 0.08); }
+body[data-accent="yan"][data-theme="dark"] .vditor-reset table tr:nth-child(even) td { background: rgba(255, 255, 255, 0.03); }
+body[data-accent="yan"][data-theme="dark"] .vditor-reset kbd { background: #282828; }
+body[data-accent="yan"][data-theme="dark"] .vditor-reset .language-mermaid,
+body[data-accent="yan"][data-theme="dark"] .vditor-reset .language-echarts,
+body[data-accent="yan"][data-theme="dark"] .vditor-reset .language-mindmap { background: #181818; }
+
+/* 砚灰下移除基础界面的暖棕阴影与遮罩。 */
+body[data-accent="yan"] #theme-seg {
+  box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px rgba(26, 28, 31, 0.05);
+}
+body[data-accent="yan"] .theme-seg-btn.active {
+  box-shadow: 0 1px 3px rgba(26, 28, 31, 0.14), 0 0 0 1px var(--border-strong);
+}
+body[data-accent="yan"] .set-seg button.active {
+  box-shadow: 0 1px 3px rgba(26, 28, 31, 0.10);
+}
+body[data-accent="yan"] #preview-pane img {
+  box-shadow: 0 4px 24px rgba(26, 28, 31, 0.12);
+}
+body[data-accent="yan"] #overlay-mask,
+body[data-accent="yan"] .modal-mask {
+  background: rgba(17, 18, 20, 0.30);
+}
+
+/* 内置品牌图本身是暖米白；仅在砚灰下去暖，不处理用户插入的普通图片。 */
+body[data-accent="yan"] #welcome-logo img { filter: grayscale(1) saturate(0) contrast(0.98) brightness(1.03); }
+body[data-accent="yan"] .about-body > img { filter: grayscale(1) saturate(0) contrast(0.98) brightness(1.03); }
+body[data-accent="yan"] .vditor-reset img[alt="InkFlow 墨流"] { filter: grayscale(1) saturate(0) contrast(0.98) brightness(1.03); }

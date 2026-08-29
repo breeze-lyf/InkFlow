@@ -49,6 +49,29 @@ const FileTree = {
     await this.render();
     $('#lib-name').textContent = dir ? P.basename(dir) : '未打开文件夹';
     $('#lib-name').title = dir || '';
+    const active = App.activeTab && App.activeTab();
+    if (active && active.path && this._pathWithinRoot(active.path)) await this.reveal(active.path);
+  },
+
+  _samePath(left, right) {
+    if (!left || !right) return false;
+    if (typeof App._samePath === 'function') return App._samePath(left, right);
+    const normalize = (value) => P.normalize ? P.normalize(value) : String(value).replace(/\\/g, '/');
+    return normalize(left) === normalize(right);
+  },
+
+  _pathWithinRoot(path) {
+    if (!this.root || !path) return false;
+    if (typeof App._pathWithin === 'function') return App._pathWithin(path, this.root);
+    const normalize = (value) => (P.normalize ? P.normalize(value) : String(value).replace(/\\/g, '/')).replace(/\/+$/, '');
+    const root = normalize(this.root);
+    const target = normalize(path);
+    return target === root || target.startsWith(root + '/');
+  },
+
+  _rowForPath(path) {
+    if (!path) return null;
+    return $$('.tree-row[data-path]').find((row) => this._samePath(row.dataset.path, path)) || null;
   },
 
   async loadDir(dir) {
@@ -221,6 +244,7 @@ const FileTree = {
       node.appendChild(children);
       await this._renderDir(entry.path, children, depth + 1);
     }
+    this.markActive();
     this._syncCollapseIcon();
   },
 
@@ -458,14 +482,20 @@ const FileTree = {
 
   markActive(path) {
     const p = path !== undefined ? path : (App.activeTab() && App.activeTab().path);
-    $$('.tree-row.active').forEach((r) => r.classList.remove('active'));
+    $$('.tree-row.active').forEach((row) => {
+      row.classList.remove('active');
+      row.removeAttribute('aria-current');
+    });
     if (!p) return;
-    const row = $(`.tree-row[data-path="${CSS.escape(p)}"]`);
-    if (row) row.classList.add('active');
+    const row = this._rowForPath(p);
+    if (row) {
+      row.classList.add('active');
+      row.setAttribute('aria-current', 'page');
+    }
   },
 
   async reveal(path) {
-    if (!this.root || !path.startsWith(this.root)) return;
+    if (!this._pathWithinRoot(path)) return false;
     // 展开所有祖先目录
     let dir = P.dirname(path);
     const chain = [];
@@ -475,8 +505,9 @@ const FileTree = {
     }
     chain.forEach((d) => this.expanded.add(d));
     await this.render();
-    const row = $(`.tree-row[data-path="${CSS.escape(path)}"]`);
+    const row = this._rowForPath(path);
     if (row) row.scrollIntoView({ block: 'center' });
+    return !!row;
   },
 
   async refresh() {
